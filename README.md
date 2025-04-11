@@ -1,39 +1,114 @@
-<!--
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# PaginatedList Widget
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages).
+A Flutter widget for implementing infinite scrolling lists with pagination functionality.
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages).
--->
+## Overview
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+`PaginatedList` is a versatile Flutter widget that handles pagination for list data. It automatically fetches more data when the user scrolls to the bottom of the list, maintaining the scroll position during loading to ensure a smooth user experience.
 
 ## Features
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+- Generic implementation to work with any data type
+- Automatic loading of next page when reaching the end of the list
+- Customizable item builder for flexible list item rendering
+- Optional custom loading indicator
+- Smart scroll position retention during loading
+- Support for mapping API responses to data models
 
-## Getting started
+## Installation
 
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+No additional installation required. Just copy the provided files into your project.
 
 ## Usage
 
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder.
+### Basic Example
 
 ```dart
-const like = 'sample';
+PaginatedList<ApiResponse, UserModel>(
+  asyncCall: (page) => userRepository.getUsers(page: page),
+  mapper: (response) => DataListAndPaginationData<UserModel>(
+    data: response.users,
+    paginationData: PaginationData(totalPages: response.totalPages),
+  ),
+  builder: (items, index) => UserListItem(user: items[index]),
+  loadingBuilder: const CustomLoadingIndicator(),
+)
 ```
 
-## Additional information
+### Required Parameters
 
-TODO: Tell users more about the package: where to find more information, how to
-contribute to the package, how to file issues, what response they can expect
-from the package authors, and more.
+- `asyncCall`: Function that fetches data for a given page number
+- `mapper`: Function that extracts the list items and pagination data from the response
+- `builder`: Function that builds the UI for each item in the list
+
+### Optional Parameters
+
+- `loadingBuilder`: Custom widget to display while loading data (defaults to CircularProgressIndicator)
+
+## Type Parameters
+
+- `T`: The type of the API response (e.g., ApiResponse, Map<String, dynamic>)
+- `E`: The type of items in the list (e.g., UserModel, Product)
+
+## Helper Classes
+
+### DataListAndPaginationData
+
+Container class that holds both the list items and pagination metadata.
+
+```dart
+DataListAndPaginationData<UserModel>(
+  data: usersList,
+  paginationData: PaginationData(totalPages: 10),
+)
+```
+
+### PaginationData
+
+Class for storing pagination metadata.
+
+```dart
+PaginationData(
+  totalPages: 10,
+  // Other pagination fields available for expansion
+)
+```
+
+### RetainableScrollController
+
+Extended ScrollController that can retain and restore scroll position.
+
+## Implementation Details
+
+1. When initialized, the widget fetches the first page of data
+2. A scroll listener monitors when the user reaches the bottom of the list
+3. When bottom is reached, it loads the next page while maintaining scroll position
+4. New items are appended to the existing list
+
+## Example: User List with Pagination
+
+```dart
+class UserListScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Users')),
+      body: PaginatedList<UserResponse, User>(
+        asyncCall: (page) => UserService.getUsers(page: page),
+        mapper: (response) => DataListAndPaginationData(
+          data: response.users,
+          paginationData: PaginationData(totalPages: response.meta.totalPages),
+        ),
+        builder: (users, index) => UserListTile(user: users[index]),
+        loadingBuilder: const LoadingIndicator(),
+      ),
+    );
+  }
+}
+```
+
+## Notes
+
+- Make sure your API returns the total number of pages for proper pagination
+- The list automatically handles loading states and appending new items
+- Scroll position is maintained during loading to prevent UI jumps
