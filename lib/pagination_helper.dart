@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
+
+enum AsyncCallStatus {initial, loading, success, error}
 
 // T is full response, E is specific model is the list
 class PaginatedList<T, E> extends StatefulWidget {
@@ -8,12 +11,14 @@ class PaginatedList<T, E> extends StatefulWidget {
 
   final Widget Function(List<E> data, int index) builder;
   final Widget? loadingBuilder;
+  final Widget? errorBuilder;
 
   const PaginatedList({
     super.key,
     this.loadingBuilder,
     required this.asyncCall,
     required this.builder,
+    this.errorBuilder,
     required this.mapper,
   });
 
@@ -23,7 +28,7 @@ class PaginatedList<T, E> extends StatefulWidget {
 
 class _PaginatedListState<T, E> extends State<PaginatedList<T, E>> {
   late RetainableScrollController scrollController;
-  bool isLoading = false;
+  AsyncCallStatus status = AsyncCallStatus.initial;
   int currentPage = 1;
   late int totalPages;
   List<E> newItems = [];
@@ -46,26 +51,35 @@ class _PaginatedListState<T, E> extends State<PaginatedList<T, E>> {
   void _onScroll() {
     if (scrollController.position.pixels ==
         scrollController.position.maxScrollExtent &&
-        !isLoading &&
+        status != AsyncCallStatus.loading &&
         currentPage <= totalPages) {
       _fetchData();
     }
   }
 
   Future<void> _fetchData() async {
-    setState(() => isLoading = true);
+    setState(() => status = AsyncCallStatus.loading);
     scrollController.retainOffset();
-    final mapperResult = await _manageMapper();
-    setState(() {
-      currentPage++;
-      isLoading = false;
-      newItems.addAll(mapperResult.data);
-    });
-    scrollController.restoreOffset();
+    try {
+      final mapperResult = await _manageMapper();
+      setState(() {
+        currentPage++;
+        setState(() => status = AsyncCallStatus.success);
+        newItems.addAll(mapperResult.data);
+      });
+      scrollController.restoreOffset();
+    } on Exception {
+      setState(() => status = AsyncCallStatus.error);
+    }
+  }
+
+  Future<T> _callApi(Future<T> Function(int currentPage) asyncCall)async{
+    final T result = await asyncCall(currentPage);
+    return result;
   }
 
   Future<DataListAndPaginationData<E>> _manageMapper()async{
-    final result = await widget.asyncCall(currentPage);
+    final result = await _callApi(widget.asyncCall);
     final DataListAndPaginationData<E> mapperResult = widget.mapper(result);
 
     _manageTotalPagesNumber(mapperResult.paginationData.totalPages?? 0); // should be put in init state
@@ -76,22 +90,61 @@ class _PaginatedListState<T, E> extends State<PaginatedList<T, E>> {
 
 
 
-  Widget _buildLoadingView(){
-    if(widget.loadingBuilder != null){
-      return widget.loadingBuilder!;
+  Widget get _buildLoadingView{
+    switch(widget.loadingBuilder){
+      case null:
+        return const CircularProgressIndicator();
+      default:
+        return widget.loadingBuilder!;
     }
-    return const CircularProgressIndicator();
+  }
+
+  Widget get _buildErrorWidget{
+    switch(widget.errorBuilder){
+      case null:
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Lottie.asset('assets/lottie/api_error.json'),
+            SizedBox(height: 10),
+            Text('Error occurs')
+          ],
+        );
+      default:
+        return widget.errorBuilder!;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      controller: scrollController,
-      itemCount: isLoading ? 1 : newItems.length,
-      itemBuilder: (context, index) => isLoading
-          ? _buildLoadingView()
-          : widget.builder(newItems, index),
+    return status == AsyncCallStatus.error? _buildErrorWidget :
+    ListView.builder(
+        controller: scrollController,
+        itemCount: status == AsyncCallStatus.loading ? 1 : newItems.length,
+        itemBuilder: (context, index) => status == AsyncCallStatus.loading ?
+        _buildLoadingView : widget.builder(newItems, index)
     );
+  }
+}
+class RetainableScrollController extends ScrollController {
+  RetainableScrollController({
+    super.initialScrollOffset,
+    super.keepScrollOffset,
+    super.debugLabel,
+  });
+
+  double? _initialOffset;
+
+  void retainOffset() {
+    if (hasClients) {
+      _initialOffset = offset;
+    }
+  }
+
+  void restoreOffset() {
+    if (_initialOffset != null && hasClients) {
+      jumpTo(_initialOffset!);
+    }
   }
 }
 
@@ -123,27 +176,6 @@ class PaginationData{
   });
 }
 
-class RetainableScrollController extends ScrollController {
-  RetainableScrollController({
-    super.initialScrollOffset,
-    super.keepScrollOffset,
-    super.debugLabel,
-  });
-
-  double? _initialOffset;
-
-  void retainOffset() {
-    if (hasClients) {
-      _initialOffset = offset;
-    }
-  }
-
-  void restoreOffset() {
-    if (_initialOffset != null && hasClients) {
-      jumpTo(_initialOffset!);
-    }
-  }
-}
 
 
 
