@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
+import 'generated/assets.dart';
+
 enum AsyncCallStatus {initial, loading, success, error}
 
 // T is full response, E is specific model is the list
@@ -88,8 +90,6 @@ class _PaginatedListState<T, E> extends State<PaginatedList<T, E>> {
 
   void _manageTotalPagesNumber(int totalPagesNumber) => totalPages = totalPagesNumber;
 
-
-
   Widget get _buildLoadingView{
     switch(widget.loadingBuilder){
       case null:
@@ -105,13 +105,31 @@ class _PaginatedListState<T, E> extends State<PaginatedList<T, E>> {
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Lottie.asset('assets/lottie/api_error.json'),
+            Lottie.asset(Assets.lottieApiError),
             SizedBox(height: 10),
             Text('Error occurs')
           ],
         );
       default:
         return widget.errorBuilder!;
+    }
+  }
+
+  Widget _buildSuccessWidget({
+    required List<E> newItems,
+    required int index
+  }){
+    if(newItems.isNotEmpty){
+      return widget.builder(newItems, index);
+    }else{
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Lottie.asset(Assets.lottieNoData),
+          SizedBox(height: 10),
+          Text('There is no data right now!')
+        ],
+      );
     }
   }
 
@@ -122,10 +140,11 @@ class _PaginatedListState<T, E> extends State<PaginatedList<T, E>> {
         controller: scrollController,
         itemCount: status == AsyncCallStatus.loading ? 1 : newItems.length,
         itemBuilder: (context, index) => status == AsyncCallStatus.loading ?
-        _buildLoadingView : widget.builder(newItems, index)
+        _buildLoadingView : _buildSuccessWidget(newItems: newItems, index: index)
     );
   }
 }
+
 class RetainableScrollController extends ScrollController {
   RetainableScrollController({
     super.initialScrollOffset,
