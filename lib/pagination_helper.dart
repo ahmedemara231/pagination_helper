@@ -3,12 +3,15 @@ import 'package:lottie/lottie.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:pagination_helper/pagination_helper_refresh_indicator.dart';
 import '../../../generated/assets.dart';
+import 'message_utils.dart';
 
 enum AsyncCallStatus {initial, loading, success, error, networkError}
 
 // T is full response, E is specific model is the list
 class PaginatedList<T, E> extends StatefulWidget {
 
+  final Color? refreshIndicatorBackgroundColor;
+  final Color? refreshIndicatorColor;
   final Future<T> Function(int currentPage) asyncCall;
   final DataListAndPaginationData<E> Function(T response) mapper;
 
@@ -18,6 +21,8 @@ class PaginatedList<T, E> extends StatefulWidget {
 
   const PaginatedList({
     super.key,
+    this.refreshIndicatorBackgroundColor,
+    this.refreshIndicatorColor,
     this.loadingBuilder,
     required this.asyncCall,
     required this.builder,
@@ -138,32 +143,41 @@ class _PaginatedListState<T, E> extends State<PaginatedList<T, E>> {
   }
 
   Widget get _buildErrorWidget{
-    if(status == AsyncCallStatus.networkError){
-      return Column(
-        children: [
-          Lottie.asset(Assets.lottieNoInternet),
-          const SizedBox(height: 10),
-          const Text(
-              'Check your internet connection',
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500)
-          )
-        ],
-      );
-    }
-    switch(widget.errorBuilder){
-      case null:
+    if(newItems.isNotEmpty){
+      if(status == AsyncCallStatus.networkError){
+        MessageUtils.showSimpleToast(msg: 'Check your internet connection', color: Colors.red);
+      }else{
+        MessageUtils.showSimpleToast(msg: 'There is error occurs', color: Colors.red);
+      }
+      return _listView(false);
+    }else{
+      if(status == AsyncCallStatus.networkError){
         return Column(
           children: [
-            Lottie.asset(Assets.lottieApiError),
+            Lottie.asset(Assets.lottieNoInternet),
             const SizedBox(height: 10),
             const Text(
-                'Error occurs!',
+                'Check your internet connection',
                 style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500)
             )
           ],
         );
-      default:
-        return widget.errorBuilder!;
+      }
+      switch(widget.errorBuilder){
+        case null:
+          return Column(
+            children: [
+              Lottie.asset(Assets.lottieApiError),
+              const SizedBox(height: 10),
+              const Text(
+                  'Error occurs!',
+                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500)
+              )
+            ],
+          );
+        default:
+          return widget.errorBuilder!;
+      }
     }
   }
 
@@ -201,6 +215,8 @@ class _PaginatedListState<T, E> extends State<PaginatedList<T, E>> {
     return Center(
       child: PaginationHelperRefreshIndicator(
         onRefresh: () async => await _fetchDataWhenRefresh(),
+        refreshIndicatorBackgroundColor: widget.refreshIndicatorBackgroundColor,
+        refreshIndicatorColor: widget.refreshIndicatorColor,
         child: status == AsyncCallStatus.error || status == AsyncCallStatus.networkError?
         _buildErrorWidget : status == AsyncCallStatus.loading?
         _buildLoadingView : _buildSuccessWidget,
