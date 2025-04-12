@@ -118,7 +118,7 @@ class _PaginatedListState<T, E> extends State<PaginatedList<T, E>> {
             children: [
               Lottie.asset(Assets.lottieNoInternet),
               const SizedBox(height: 10),
-              Text(
+              const Text(
                   'Check your internet connection',
                   style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500)
               )
@@ -135,7 +135,7 @@ class _PaginatedListState<T, E> extends State<PaginatedList<T, E>> {
               children: [
                 Lottie.asset(Assets.lottieApiError),
                 const SizedBox(height: 10),
-                Text(
+                const Text(
                     'Error occurs',
                     style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500)
                 )
@@ -158,8 +158,8 @@ class _PaginatedListState<T, E> extends State<PaginatedList<T, E>> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Lottie.asset(Assets.lottieNoData),
-          SizedBox(height: 10),
-          Text('There is no data right now!')
+          const SizedBox(height: 10),
+          const Text('There is no data right now!')
         ],
       );
     }
