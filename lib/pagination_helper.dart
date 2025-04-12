@@ -163,7 +163,6 @@ class _PaginatedListState<T, E> extends State<PaginatedList<T, E>> {
   Widget _listView(bool withLoading) {
     return ListView.builder(
       controller: scrollController,
-      shrinkWrap: true,
       itemCount: withLoading ? newItems.length + 1 : newItems.length,
       itemBuilder: (context, index) {
         if (index < newItems.length) {
