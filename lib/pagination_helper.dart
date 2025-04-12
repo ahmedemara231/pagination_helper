@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import '../../../generated/assets.dart';
 
-import 'generated/assets.dart';
 enum AsyncCallStatus {initial, loading, success, error, networkError}
 
 // T is full response, E is specific model is the list
@@ -50,12 +50,12 @@ class _PaginatedListState<T, E> extends State<PaginatedList<T, E>> {
     super.dispose();
   }
 
-  void _onScroll() {
+  Future<void> _onScroll() async{
     if (scrollController.position.pixels ==
         scrollController.position.maxScrollExtent &&
         status != AsyncCallStatus.loading &&
         currentPage <= totalPages) {
-      _fetchData();
+      await _fetchData();
     }
   }
 
@@ -98,9 +98,15 @@ class _PaginatedListState<T, E> extends State<PaginatedList<T, E>> {
 
   void _manageTotalPagesNumber(int totalPagesNumber) => totalPages = totalPagesNumber;
 
-
-
   Widget get _buildLoadingView{
+    if(newItems.isEmpty){
+      return _loadingWidget;
+    }else{
+      return _listView(true);
+    }
+  }
+
+  Widget get _loadingWidget{
     switch(widget.loadingBuilder){
       case null:
         return const Center(child: CircularProgressIndicator());
@@ -111,51 +117,40 @@ class _PaginatedListState<T, E> extends State<PaginatedList<T, E>> {
 
   Widget get _buildErrorWidget{
     if(status == AsyncCallStatus.networkError){
-      return SizedBox.square(
-          dimension: 100,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Lottie.asset(Assets.lottieNoInternet),
-              const SizedBox(height: 10),
-              const Text(
-                  'Check your internet connection',
-                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500)
-              )
-            ],
+      return Column(
+        children: [
+          Lottie.asset(Assets.lottieNoInternet),
+          const SizedBox(height: 10),
+          const Text(
+              'Check your internet connection',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500)
           )
+        ],
       );
     }
     switch(widget.errorBuilder){
       case null:
-        return SizedBox.square(
-            dimension: 100,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Lottie.asset(Assets.lottieApiError),
-                const SizedBox(height: 10),
-                const Text(
-                    'Error occurs',
-                    style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500)
-                )
-              ],
+        return Column(
+          children: [
+            Lottie.asset(Assets.lottieApiError),
+            const SizedBox(height: 10),
+            const Text(
+                'Error occurs!',
+                style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500)
             )
+          ],
         );
       default:
         return widget.errorBuilder!;
     }
   }
 
-  Widget _buildSuccessWidget({
-    required List<E> newItems,
-    required int index
-  }){
+
+  Widget get _buildSuccessWidget{
     if(newItems.isNotEmpty){
-      return widget.builder(newItems, index);
+      return _listView(false);
     }else{
       return Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Lottie.asset(Assets.lottieNoData),
           const SizedBox(height: 10),
@@ -165,19 +160,31 @@ class _PaginatedListState<T, E> extends State<PaginatedList<T, E>> {
     }
   }
 
+  Widget _listView(bool withLoading) {
+    return ListView.builder(
+      controller: scrollController,
+      shrinkWrap: true,
+      itemCount: withLoading ? newItems.length + 1 : newItems.length,
+      itemBuilder: (context, index) {
+        if (index < newItems.length) {
+          return widget.builder(newItems, index);
+        } else {
+          return _loadingWidget;
+        }
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return status == AsyncCallStatus.error || status == AsyncCallStatus.networkError?
-    _buildErrorWidget :
-    ListView.builder(
-        controller: scrollController,
-        itemCount: status == AsyncCallStatus.loading? 1 : newItems.length,
-        itemBuilder: (context, index) => status == AsyncCallStatus.loading ?
-        _buildLoadingView : _buildSuccessWidget(newItems: newItems, index: index)
+    return Center(
+      child: status == AsyncCallStatus.error || status == AsyncCallStatus.networkError?
+      _buildErrorWidget : status == AsyncCallStatus.loading?
+      _buildLoadingView : _buildSuccessWidget,
     );
   }
 }
+
 class RetainableScrollController extends ScrollController {
   RetainableScrollController({
     super.initialScrollOffset,
@@ -236,9 +243,6 @@ class PaginatedListError implements Exception{
 class PaginationNetworkError extends PaginatedListError{
   PaginationNetworkError(super.msg);
 }
-
-
-
 
 
 
