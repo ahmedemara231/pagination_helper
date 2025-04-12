@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:pagination_helper/pagination_helper_refresh_indicator.dart';
 import '../../../generated/assets.dart';
 
 enum AsyncCallStatus {initial, loading, success, error, networkError}
@@ -77,6 +78,34 @@ class _PaginatedListState<T, E> extends State<PaginatedList<T, E>> {
     }
   }
 
+  Future<void> _fetchDataWhenRefresh() async {
+    setState(() => status = AsyncCallStatus.loading);
+    currentPage = 1;
+    newItems = [];
+    scrollController.retainOffset();
+    try {
+      final mapperResult = await _manageMapper();
+      setState(() {
+        currentPage++;
+        setState(() => status = AsyncCallStatus.success);
+        newItems.addAll(mapperResult.data);
+      });
+      scrollController.restoreOffset();
+    } on PaginationNetworkError{
+      setState(() => status = AsyncCallStatus.networkError);
+    }on Exception {
+      setState(() => status = AsyncCallStatus.error);
+    }
+  }
+
+  Future<DataListAndPaginationData<E>> _manageMapper()async{
+    final result = await _callApi(widget.asyncCall);
+    final DataListAndPaginationData<E> mapperResult = widget.mapper(result);
+
+    _manageTotalPagesNumber(mapperResult.paginationData.totalPages?? 0); // should be put in init state
+    return mapperResult;
+  }
+
   Future<T> _callApi(Future<T> Function(int currentPage) asyncCall)async{
     final connectivityResult = await Connectivity().checkConnectivity();
     switch(connectivityResult){
@@ -88,13 +117,6 @@ class _PaginatedListState<T, E> extends State<PaginatedList<T, E>> {
     }
   }
 
-  Future<DataListAndPaginationData<E>> _manageMapper()async{
-    final result = await _callApi(widget.asyncCall);
-    final DataListAndPaginationData<E> mapperResult = widget.mapper(result);
-
-    _manageTotalPagesNumber(mapperResult.paginationData.totalPages?? 0); // should be put in init state
-    return mapperResult;
-  }
 
   void _manageTotalPagesNumber(int totalPagesNumber) => totalPages = totalPagesNumber;
 
@@ -177,9 +199,12 @@ class _PaginatedListState<T, E> extends State<PaginatedList<T, E>> {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: status == AsyncCallStatus.error || status == AsyncCallStatus.networkError?
-      _buildErrorWidget : status == AsyncCallStatus.loading?
-      _buildLoadingView : _buildSuccessWidget,
+      child: PaginationHelperRefreshIndicator(
+        onRefresh: () async => await _fetchDataWhenRefresh(),
+        child: status == AsyncCallStatus.error || status == AsyncCallStatus.networkError?
+        _buildErrorWidget : status == AsyncCallStatus.loading?
+        _buildLoadingView : _buildSuccessWidget,
+      ),
     );
   }
 }
@@ -242,112 +267,3 @@ class PaginatedListError implements Exception{
 class PaginationNetworkError extends PaginatedListError{
   PaginationNetworkError(super.msg);
 }
-
-
-
-
-// class PaginatedList<T> extends StatefulWidget {
-//
-//   final int pagesNumber;
-//   final Future<List<T>> Function() getItems;
-//   final Widget Function(List<T> data, int index) builder;
-//   final Widget Function()? loadingBuilder;
-//
-//   const PaginatedList({
-//     super.key,
-//     required this.getItems,
-//     required this.pagesNumber,
-//     required this.builder,
-//   }) : loadingBuilder = null;
-//
-//   const PaginatedList.loadingBuilder({super.key,
-//     required this.pagesNumber,
-//     required this.getItems,
-//     required this.builder,
-//     required this.loadingBuilder,
-//   });
-//
-//   @override
-//   State<PaginatedList<T>> createState() => _PaginatedListState<T>();
-// }
-//
-// class _PaginatedListState<T> extends State<PaginatedList<T>> {
-//   late RetainableScrollController scrollController;
-//   bool isLoading = false;
-//   int currentPage = 1;
-//   List<T> newItems = [];
-//
-//   @override
-//   void initState() {
-//     super.initState();
-//     scrollController = RetainableScrollController();
-//     scrollController.addListener(_onScroll);
-//     _fetchData();
-//   }
-//
-//   @override
-//   void dispose() {
-//     scrollController.dispose();
-//     super.dispose();
-//   }
-//
-//   void _onScroll() {
-//     if (scrollController.position.pixels ==
-//         scrollController.position.maxScrollExtent &&
-//         !isLoading &&
-//         currentPage < widget.pagesNumber) {
-//       _fetchData();
-//     }
-//   }
-//
-//   Future<void> _fetchData() async {
-//     setState(() => isLoading = true);
-//     scrollController.retainOffset();
-//     final fetchedNewItems = await widget.getItems();
-//     setState(() {
-//       currentPage++;
-//       isLoading = false;
-//       newItems.addAll(fetchedNewItems);
-//     });
-//     scrollController.restoreOffset();
-//   }
-//
-//   Widget _buildLoadingView(){
-//     if(widget.loadingBuilder != null){
-//       return widget.loadingBuilder!();
-//     }
-//     return CustomLoading.showLoadingView();
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return ListView.builder(
-//       controller: scrollController,
-//       itemCount: isLoading ? 1 : newItems.length,
-//       itemBuilder: (context, index) => isLoading
-//           ? _buildLoadingView()
-//           : widget.builder(newItems, index).paddingSymmetric(vertical: 50),
-//     );
-//   }
-// }
-// class RetainableScrollController extends ScrollController {
-//   RetainableScrollController({
-//     super.initialScrollOffset,
-//     super.keepScrollOffset,
-//     super.debugLabel,
-//   });
-//
-//   double? _initialOffset;
-//
-//   void retainOffset() {
-//     if (hasClients) {
-//       _initialOffset = offset;
-//     }
-//   }
-//
-//   void restoreOffset() {
-//     if (_initialOffset != null && hasClients) {
-//       jumpTo(_initialOffset!);
-//     }
-//   }
-// }
