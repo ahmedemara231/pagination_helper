@@ -10,25 +10,30 @@ import 'message_utils.dart';
 
 enum AsyncCallStatus {initial, loading, success, error, networkError}
 
-// T is full response, E is specific model is the list
+// T is full response which includes data list and pagination data
+// E is specific model is the list
 class PaginatedList<T, E> extends StatefulWidget {
 
   final Color? refreshIndicatorBackgroundColor;
   final Color? refreshIndicatorColor;
+  final Function(List<E> data)? onSuccess;
+  final Function(String errorMessage)? onError;
   final Future<T> Function(int currentPage) asyncCall;
   final DataListAndPaginationData<E> Function(T response) mapper;
   final String Function(DioException error) errorMessageMapper;
-  final Widget Function(List<E> data, int index) builder;
+  final Widget Function(List<E> data, int index) itemBuilder;
   final Widget? loadingBuilder;
   final Widget Function(String errorMsg)? errorBuilder;
 
   const PaginatedList({
     super.key,
+    this.onSuccess,
+    this.onError,
     this.refreshIndicatorBackgroundColor,
     this.refreshIndicatorColor,
     this.loadingBuilder,
     required this.asyncCall,
-    required this.builder,
+    required this.itemBuilder,
     required this.errorMessageMapper,
     this.errorBuilder,
     required this.mapper,
@@ -82,9 +87,12 @@ class _PaginatedListState<T, E> extends State<PaginatedList<T, E>> {
       final mapperResult = await _manageMapper();
       setState(() {
         currentPage++;
-        setState(() => status = AsyncCallStatus.success);
         newItems.addAll(mapperResult.data);
+        setState(() => status = AsyncCallStatus.success);
       });
+      if(widget.onSuccess != null){
+        widget.onSuccess!(newItems);
+      }
       scrollController.restoreOffset();
 
     } on PaginationNetworkError{
@@ -92,6 +100,9 @@ class _PaginatedListState<T, E> extends State<PaginatedList<T, E>> {
     }on DioException catch(e) {
       _logError(e);
       errorMsg = widget.errorMessageMapper(e);
+      if(widget.onError != null){
+        widget.onError!(errorMsg);
+      }
       setState(() => status = AsyncCallStatus.error);
     }on Exception catch(e){
       errorMsg = 'There is error occur $e';
@@ -223,7 +234,7 @@ class _PaginatedListState<T, E> extends State<PaginatedList<T, E>> {
       itemCount: withLoading ? newItems.length + 1 : newItems.length,
       itemBuilder: (context, index) {
         if (index < newItems.length) {
-          return widget.builder(newItems, index);
+          return widget.itemBuilder(newItems, index);
         } else {
           return _loadingWidget;
         }
