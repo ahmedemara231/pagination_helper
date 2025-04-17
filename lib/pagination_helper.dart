@@ -9,12 +9,13 @@ import 'package:pagination_helper/pagination_helper_refresh_indicator.dart';
 import '../../../generated/assets.dart';
 import 'message_utils.dart';
 
+enum RankingType {gridView, listView}
 enum AsyncCallStatus {initial, loading, success, error, networkError}
 
 // T is full response which includes data list and pagination data
 // E is specific model is the list
-class PaginatedList<T, E> extends StatefulWidget {
-
+class EasyPagination<T, E> extends StatefulWidget {
+  final RankingType rankingType;
   final Color? refreshIndicatorBackgroundColor;
   final Color? refreshIndicatorColor;
   final Function(List<E> data)? onSuccess;
@@ -25,28 +26,59 @@ class PaginatedList<T, E> extends StatefulWidget {
   final Widget Function(List<E> data, int index) itemBuilder;
   final Widget? loadingBuilder;
   final Widget Function(String errorMsg)? errorBuilder;
-  final PaginatedListController<E>? controller;
+  final EasyPaginationController<E>? controller;
+  final SliverGridDelegate? gridDelegate;
 
-  const PaginatedList({
-    super.key,
+  // const EasyPagination({
+  //   super.key,
+  //   this.onSuccess,
+  //   this.onError,
+  //   this.refreshIndicatorBackgroundColor,
+  //   this.refreshIndicatorColor,
+  //   this.loadingBuilder,
+  //   required this.asyncCall,
+  //   required this.itemBuilder,
+  //   required this.errorMessageMapper,
+  //   this.errorBuilder,
+  //   required this.mapper,
+  //   this.controller,
+  //   this.rankingType
+  // });
+
+  const EasyPagination.gridViewRanking({super.key,
+    required this.asyncCall,
+    required this.mapper,
+    required this.errorMessageMapper,
+    required this.itemBuilder,
+    this.gridDelegate,
     this.onSuccess,
     this.onError,
     this.refreshIndicatorBackgroundColor,
     this.refreshIndicatorColor,
     this.loadingBuilder,
-    required this.asyncCall,
-    required this.itemBuilder,
-    required this.errorMessageMapper,
     this.errorBuilder,
-    required this.mapper,
     this.controller,
-  });
+}) : rankingType = RankingType.gridView;
+
+  const EasyPagination.listViewRanking({super.key,
+    required this.asyncCall,
+    required this.mapper,
+    required this.errorMessageMapper,
+    required this.itemBuilder,
+    this.onSuccess,
+    this.onError,
+    this.refreshIndicatorBackgroundColor,
+    this.refreshIndicatorColor,
+    this.loadingBuilder,
+    this.errorBuilder,
+    this.controller,
+  }) : rankingType = RankingType.listView, gridDelegate = null;
 
   @override
-  State<PaginatedList<T, E>> createState() => _PaginatedListState<T, E>();
+  State<EasyPagination<T, E>> createState() => _EasyPaginationState<T, E>();
 }
 
-class _PaginatedListState<T, E> extends State<PaginatedList<T, E>> {
+class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
   late RetainableScrollController scrollController;
   AsyncCallStatus status = AsyncCallStatus.initial;
   int currentPage = 1;
@@ -167,11 +199,47 @@ class _PaginatedListState<T, E> extends State<PaginatedList<T, E>> {
 
   void _manageTotalPagesNumber(int totalPagesNumber) => totalPages = totalPagesNumber;
 
+
+  Widget _listRanking(bool withLoading){
+    if(widget.rankingType == RankingType.gridView){
+      return _gridView(withLoading);
+    }
+    return _listView(withLoading);
+  }
+
+  Widget _listView(bool withLoading) {
+    return ListView.builder(
+      controller: scrollController,
+      itemCount: withLoading ? newItems.length + 1 : newItems.length,
+      itemBuilder: (context, index) {
+        if (index < newItems.length) {
+          return widget.itemBuilder(newItems, index);
+        } else {
+          return _loadingWidget;
+        }
+      },
+    );
+  }
+
+  Widget _gridView(bool withLoading) {
+    return GridView.builder(
+      controller: scrollController,
+      gridDelegate: widget.gridDelegate!,
+      itemBuilder: (context, index) {
+        if (index < newItems.length) {
+          return widget.itemBuilder(newItems, index);
+        } else {
+          return _loadingWidget;
+        }
+      },
+    );
+  }
+
   Widget get _buildLoadingView{
     if(newItems.isEmpty){
       return _loadingWidget;
     }else{
-      return _listView(true);
+      return _listRanking(true);
     }
   }
 
@@ -191,7 +259,7 @@ class _PaginatedListState<T, E> extends State<PaginatedList<T, E>> {
       }else{
         MessageUtils.showSimpleToast(msg: errorMsg, color: Colors.red);
       }
-      return _listView(false);
+      return _listRanking(false);
     }else{
       if(status == AsyncCallStatus.networkError){
         return Column(
@@ -226,7 +294,7 @@ class _PaginatedListState<T, E> extends State<PaginatedList<T, E>> {
 
   Widget get _buildSuccessWidget{
     if(newItems.isNotEmpty){
-      return _listView(false);
+     return _listRanking(false);
     }else{
       return Column(
         children: [
@@ -236,20 +304,6 @@ class _PaginatedListState<T, E> extends State<PaginatedList<T, E>> {
         ],
       );
     }
-  }
-
-  Widget _listView(bool withLoading) {
-    return ListView.builder(
-      controller: scrollController,
-      itemCount: withLoading ? newItems.length + 1 : newItems.length,
-      itemBuilder: (context, index) {
-        if (index < newItems.length) {
-          return widget.itemBuilder(newItems, index);
-        } else {
-          return _loadingWidget;
-        }
-      },
-    );
   }
 
   @override
@@ -317,16 +371,16 @@ class PaginationData{
   });
 }
 
-class PaginatedListError implements Exception{
+class EasyPaginationError implements Exception{
   final String msg;
-  PaginatedListError(this.msg);
+  EasyPaginationError(this.msg);
 }
 
-class PaginationNetworkError extends PaginatedListError{
+class PaginationNetworkError extends EasyPaginationError{
   PaginationNetworkError(super.msg);
 }
 
-class PaginatedListController<E> {
+class EasyPaginationController<E> {
   List<E> _items = [];
 
   void updateItems(List<E> newItems) {
