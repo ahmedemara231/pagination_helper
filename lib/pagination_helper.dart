@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:developer' as dev;
+import 'dart:io';
 import 'dart:math' as math;
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -18,39 +19,27 @@ class EasyPagination<T, E> extends StatefulWidget {
   final RankingType rankingType;
   final Color? refreshIndicatorBackgroundColor;
   final Color? refreshIndicatorColor;
+  final ErrorMapper errorMapper;
   final Function(List<E> data)? onSuccess;
   final Function(String errorMessage)? onError;
   final Future<T> Function(int currentPage) asyncCall;
   final DataListAndPaginationData<E> Function(T response) mapper;
-  final String Function(DioException error) errorMessageMapper;
   final Widget Function(List<E> data, int index) itemBuilder;
   final Widget? loadingBuilder;
   final Widget Function(String errorMsg)? errorBuilder;
   final EasyPaginationController<E>? controller;
-  final SliverGridDelegate? gridDelegate;
+  final double? mainAxisSpacing;
+  final double? crossAxisSpacing;
+  final double? childAspectRatio;
+  final Axis? scrollDirection;
+  final int? crossAxisCount;
+  final bool? shrinkWrap;
 
-  // const EasyPagination({
-  //   super.key,
-  //   this.onSuccess,
-  //   this.onError,
-  //   this.refreshIndicatorBackgroundColor,
-  //   this.refreshIndicatorColor,
-  //   this.loadingBuilder,
-  //   required this.asyncCall,
-  //   required this.itemBuilder,
-  //   required this.errorMessageMapper,
-  //   this.errorBuilder,
-  //   required this.mapper,
-  //   this.controller,
-  //   this.rankingType
-  // });
-
-  const EasyPagination.gridViewRanking({super.key,
+  const EasyPagination.gridView({super.key,
     required this.asyncCall,
     required this.mapper,
-    required this.errorMessageMapper,
+    required this.errorMapper,
     required this.itemBuilder,
-    this.gridDelegate,
     this.onSuccess,
     this.onError,
     this.refreshIndicatorBackgroundColor,
@@ -58,12 +47,18 @@ class EasyPagination<T, E> extends StatefulWidget {
     this.loadingBuilder,
     this.errorBuilder,
     this.controller,
+    this.shrinkWrap,
+    this.mainAxisSpacing,
+    this.crossAxisSpacing,
+    this.childAspectRatio,
+    this.scrollDirection,
+    this.crossAxisCount,
 }) : rankingType = RankingType.gridView;
 
-  const EasyPagination.listViewRanking({super.key,
+  const EasyPagination.listView({super.key,
     required this.asyncCall,
     required this.mapper,
-    required this.errorMessageMapper,
+    required this.errorMapper,
     required this.itemBuilder,
     this.onSuccess,
     this.onError,
@@ -72,7 +67,13 @@ class EasyPagination<T, E> extends StatefulWidget {
     this.loadingBuilder,
     this.errorBuilder,
     this.controller,
-  }) : rankingType = RankingType.listView, gridDelegate = null;
+    this.shrinkWrap,
+    this.scrollDirection,
+  }) : rankingType = RankingType.listView,
+        crossAxisCount = null,
+        childAspectRatio = null,
+        crossAxisSpacing = null,
+        mainAxisSpacing = null;
 
   @override
   State<EasyPagination<T, E>> createState() => _EasyPaginationState<T, E>();
@@ -110,9 +111,14 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
   }
 
   String errorMsg = '';
-  void _logError(DioException e){
-    String prettyJson = const JsonEncoder.withIndent('  ').convert(e.response?.data);
-    dev.log('error : $prettyJson');
+  void _logError(Exception e){
+    if(e is DioException){
+      String prettyJson = const JsonEncoder.withIndent('  ').convert(e.response?.data);
+      dev.log('error : $prettyJson');
+    }else if(e is HttpException){
+      String prettyJson = const JsonEncoder.withIndent('  ').convert(e.message);
+      dev.log('error : $prettyJson');
+    }
   }
 
   Future<void> _fetchData() async {
@@ -135,14 +141,19 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
 
     } on PaginationNetworkError{
       setState(() => status = AsyncCallStatus.networkError);
-    }on DioException catch(e) {
+    }on Exception catch(e){
+      if(e is DioException){
+        errorMsg = widget.errorMapper.errorWhenDio!(e);
+      }else if(e is HttpException){
+        errorMsg = widget.errorMapper.errorWhenHttp!(e);
+      }else{
+        errorMsg = e.toString();
+      }
+
       _logError(e);
-      errorMsg = widget.errorMessageMapper(e);
       if(widget.onError != null){
         widget.onError!(errorMsg);
       }
-      setState(() => status = AsyncCallStatus.error);
-    }on Exception catch(e){
       errorMsg = 'There is error occur $e';
       setState(() => status = AsyncCallStatus.error);
     }
@@ -167,11 +178,19 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
       scrollController.restoreOffset();
     } on PaginationNetworkError{
       setState(() => status = AsyncCallStatus.networkError);
-    }on DioException catch(e){
-      _logError(e);
-      errorMsg = widget.errorMessageMapper(e);
-      setState(() => status = AsyncCallStatus.error);
     }on Exception catch(e){
+      if(e is DioException){
+        errorMsg = widget.errorMapper.errorWhenDio!(e);
+      }else if(e is HttpException){
+        errorMsg = widget.errorMapper.errorWhenHttp!(e);
+      }else{
+        errorMsg = e.toString();
+      }
+
+      _logError(e);
+      if(widget.onError != null){
+        widget.onError!(errorMsg);
+      }
       errorMsg = 'There is error occur $e';
       setState(() => status = AsyncCallStatus.error);
     }
@@ -209,6 +228,8 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
 
   Widget _listView(bool withLoading) {
     return ListView.builder(
+      scrollDirection: widget.scrollDirection?? Axis.vertical,
+      shrinkWrap: widget.shrinkWrap?? false,
       controller: scrollController,
       itemCount: withLoading ? newItems.length + 1 : newItems.length,
       itemBuilder: (context, index) {
@@ -222,16 +243,22 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
   }
 
   Widget _gridView(bool withLoading) {
-    return GridView.builder(
+    return GridView.count(
+      shrinkWrap: widget.shrinkWrap?? false,
+      crossAxisCount: widget.crossAxisCount?? 2,
+      mainAxisSpacing: widget.mainAxisSpacing?? 0.0,
+      crossAxisSpacing: widget.crossAxisSpacing?? 0.0,
+      childAspectRatio: widget.childAspectRatio?? 0.0,
+      scrollDirection: widget.scrollDirection?? Axis.vertical,
       controller: scrollController,
-      gridDelegate: widget.gridDelegate!,
-      itemBuilder: (context, index) {
+      children: List.generate(
+        withLoading ? newItems.length + 1 : newItems.length, (index)  {
         if (index < newItems.length) {
           return widget.itemBuilder(newItems, index);
         } else {
           return _loadingWidget;
-        }
-      },
+        }},
+      ),
     );
   }
 
@@ -319,6 +346,13 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
       ),
     );
   }
+}
+
+class ErrorMapper{
+  String Function(DioException e)? errorWhenDio;
+  String Function(HttpException e)? errorWhenHttp;
+
+  ErrorMapper({this.errorWhenDio, this.errorWhenHttp});
 }
 
 class RetainableScrollController extends ScrollController {
