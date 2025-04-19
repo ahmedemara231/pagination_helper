@@ -6,9 +6,9 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:pagination_helper/pagination_helper_refresh_indicator.dart';
+import 'package:pagination_helper/widgets/pagination_helper_refresh_indicator.dart';
 import '../../../generated/assets.dart';
-import 'message_utils.dart';
+import 'helpers/message_utils.dart';
 
 enum RankingType {gridView, listView}
 enum AsyncCallStatus {initial, loading, success, error, networkError}
@@ -335,15 +335,13 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: PaginationHelperRefreshIndicator(
-        onRefresh: () async => await _fetchDataWhenRefresh(),
-        refreshIndicatorBackgroundColor: widget.refreshIndicatorBackgroundColor,
-        refreshIndicatorColor: widget.refreshIndicatorColor,
-        child: status == AsyncCallStatus.error || status == AsyncCallStatus.networkError?
-        _buildErrorWidget : status == AsyncCallStatus.loading?
-        _buildLoadingView : _buildSuccessWidget,
-      ),
+    return PaginationHelperRefreshIndicator(
+      onRefresh: () async => await _fetchDataWhenRefresh(),
+      refreshIndicatorBackgroundColor: widget.refreshIndicatorBackgroundColor,
+      refreshIndicatorColor: widget.refreshIndicatorColor,
+      child: status == AsyncCallStatus.error || status == AsyncCallStatus.networkError?
+      _buildErrorWidget : status == AsyncCallStatus.loading?
+      _buildLoadingView : _buildSuccessWidget,
     );
   }
 }
