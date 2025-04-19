@@ -127,7 +127,9 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
     try {
       final mapperResult = await _manageMapper();
       setState(() {
-        currentPage++;
+        if(currentPage < mapperResult.paginationData.totalPages!.toInt()){
+          currentPage++;
+        }
         newItems.addAll(mapperResult.data);
         if(widget.controller != null){
           widget.controller!.updateItems(newItems);
@@ -167,7 +169,9 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
     try {
       final mapperResult = await _manageMapper();
       setState(() {
-        currentPage++;
+        if(currentPage < mapperResult.paginationData.totalPages!.toInt()){
+          currentPage++;
+        }
         newItems.addAll(mapperResult.data);
         if(widget.controller != null){
           widget.controller!.updateItems(newItems);
@@ -231,12 +235,15 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
       scrollDirection: widget.scrollDirection?? Axis.vertical,
       shrinkWrap: widget.shrinkWrap?? false,
       controller: scrollController,
-      itemCount: withLoading ? newItems.length + 1 : newItems.length,
+      itemCount: withLoading ? newItems.length + 1 :
+      currentPage == totalPages? newItems.length + 1 : newItems.length,
       itemBuilder: (context, index) {
         if (index < newItems.length) {
           return widget.itemBuilder(newItems, index);
         } else {
-          return _loadingWidget;
+          return currentPage >= totalPages?
+          const Text('No more data', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)) :
+          _loadingWidget;
         }
       },
     );
@@ -252,11 +259,14 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
       scrollDirection: widget.scrollDirection?? Axis.vertical,
       controller: scrollController,
       children: List.generate(
-        withLoading ? newItems.length + 1 : newItems.length, (index)  {
+           withLoading ? newItems.length + 1 :
+          currentPage >= totalPages? newItems.length + 1 : newItems.length, (index)  {
         if (index < newItems.length) {
           return widget.itemBuilder(newItems, index);
         } else {
-          return _loadingWidget;
+          return currentPage >= totalPages?
+          const Text('No more data', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)) :
+          _loadingWidget;
         }},
       ),
     );
