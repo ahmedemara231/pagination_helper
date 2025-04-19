@@ -16,6 +16,7 @@ enum AsyncCallStatus {initial, loading, success, error, networkError}
 // T is full response which includes data list and pagination data
 // E is specific model is the list
 class EasyPagination<T, E> extends StatefulWidget {
+  final bool showNoDataAlert;
   final RankingType rankingType;
   final Color? refreshIndicatorBackgroundColor;
   final Color? refreshIndicatorColor;
@@ -42,6 +43,7 @@ class EasyPagination<T, E> extends StatefulWidget {
     required this.itemBuilder,
     this.onSuccess,
     this.onError,
+    this.showNoDataAlert = false,
     this.refreshIndicatorBackgroundColor,
     this.refreshIndicatorColor,
     this.loadingBuilder,
@@ -62,6 +64,7 @@ class EasyPagination<T, E> extends StatefulWidget {
     required this.itemBuilder,
     this.onSuccess,
     this.onError,
+    this.showNoDataAlert = false,
     this.refreshIndicatorBackgroundColor,
     this.refreshIndicatorColor,
     this.loadingBuilder,
@@ -237,14 +240,20 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
       controller: scrollController,
       // itemCount: withLoading ? newItems.length + 1 :
       // currentPage <= totalPages? newItems.length + 1 : newItems.length,
-      itemCount: newItems.length + 1,
+      // itemCount: newItems.length + 1,
+      itemCount: widget.showNoDataAlert? newItems.length + 1 :
+      status == AsyncCallStatus.loading? newItems.length + 1 : newItems.length,
       itemBuilder: (context, index) {
         if (index < newItems.length) {
           return widget.itemBuilder(newItems, index);
         } else {
-          return currentPage > totalPages?
-          const Text('No more data', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)) :
-          _loadingWidget;
+          if(widget.showNoDataAlert){
+            return currentPage > totalPages?
+            const Text('No more data', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)) :
+            _loadingWidget;
+          }else{
+            return _loadingWidget;
+          }
         }
       },
     );
@@ -260,13 +269,17 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
       scrollDirection: widget.scrollDirection?? Axis.vertical,
       controller: scrollController,
       children: List.generate(
-        newItems.length + 1, (index)  {
+        newItems.length + 1, (index) {
         if (index < newItems.length) {
           return widget.itemBuilder(newItems, index);
         } else {
-          return currentPage > totalPages?
-          const Text('No more data', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)) :
-          _loadingWidget;
+          if(widget.showNoDataAlert){
+            return currentPage > totalPages?
+            const Text('No more data', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)) :
+            _loadingWidget;
+          }else{
+            return _loadingWidget;
+          }
         }},
       ),
     );
