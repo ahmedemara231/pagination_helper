@@ -127,7 +127,7 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
     try {
       final mapperResult = await _manageMapper();
       setState(() {
-        if(currentPage < mapperResult.paginationData.totalPages!.toInt()){
+        if(currentPage <= mapperResult.paginationData.totalPages!.toInt()){
           currentPage++;
         }
         newItems.addAll(mapperResult.data);
@@ -169,7 +169,7 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
     try {
       final mapperResult = await _manageMapper();
       setState(() {
-        if(currentPage < mapperResult.paginationData.totalPages!.toInt()){
+        if(currentPage <= mapperResult.paginationData.totalPages!.toInt()){
           currentPage++;
         }
         newItems.addAll(mapperResult.data);
@@ -223,25 +223,26 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
   void _manageTotalPagesNumber(int totalPagesNumber) => totalPages = totalPagesNumber;
 
 
-  Widget _listRanking(bool withLoading){
+  Widget _listRanking(){
     if(widget.rankingType == RankingType.gridView){
-      return _gridView(withLoading);
+      return _gridView();
     }
-    return _listView(withLoading);
+    return _listView();
   }
 
-  Widget _listView(bool withLoading) {
+  Widget _listView() {
     return ListView.builder(
       scrollDirection: widget.scrollDirection?? Axis.vertical,
       shrinkWrap: widget.shrinkWrap?? false,
       controller: scrollController,
-      itemCount: withLoading ? newItems.length + 1 :
-      currentPage == totalPages? newItems.length + 1 : newItems.length,
+      // itemCount: withLoading ? newItems.length + 1 :
+      // currentPage <= totalPages? newItems.length + 1 : newItems.length,
+      itemCount: newItems.length + 1,
       itemBuilder: (context, index) {
         if (index < newItems.length) {
           return widget.itemBuilder(newItems, index);
         } else {
-          return currentPage >= totalPages?
+          return currentPage > totalPages?
           const Text('No more data', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)) :
           _loadingWidget;
         }
@@ -249,7 +250,7 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
     );
   }
 
-  Widget _gridView(bool withLoading) {
+  Widget _gridView() {
     return GridView.count(
       shrinkWrap: widget.shrinkWrap?? false,
       crossAxisCount: widget.crossAxisCount?? 2,
@@ -259,12 +260,11 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
       scrollDirection: widget.scrollDirection?? Axis.vertical,
       controller: scrollController,
       children: List.generate(
-           withLoading ? newItems.length + 1 :
-          currentPage >= totalPages? newItems.length + 1 : newItems.length, (index)  {
+        newItems.length + 1, (index)  {
         if (index < newItems.length) {
           return widget.itemBuilder(newItems, index);
         } else {
-          return currentPage >= totalPages?
+          return currentPage > totalPages?
           const Text('No more data', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)) :
           _loadingWidget;
         }},
@@ -276,7 +276,7 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
     if(newItems.isEmpty){
       return _loadingWidget;
     }else{
-      return _listRanking(true);
+      return _listRanking();
     }
   }
 
@@ -296,7 +296,7 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
       }else{
         MessageUtils.showSimpleToast(msg: errorMsg, color: Colors.red);
       }
-      return _listRanking(false);
+      return _listRanking();
     }else{
       if(status == AsyncCallStatus.networkError){
         return Column(
@@ -331,7 +331,7 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
 
   Widget get _buildSuccessWidget{
     if(newItems.isNotEmpty){
-     return _listRanking(false);
+     return _listRanking();
     }else{
       return Column(
         children: [
