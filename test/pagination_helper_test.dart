@@ -1,6 +1,6 @@
 // import 'package:flutter_test/flutter_test.dart';
 //
-// import 'package:pagination_helper/pagination_helper.dart';
+// import 'package:pagination_helper/easy_pagination.dart';
 //
 // void main() {
 //   test('adds one to input values', () {

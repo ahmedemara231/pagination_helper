@@ -1,7 +1,8 @@
 name: easy_pagination
 description: "A flexible and customizable Flutter package for handling paginated data with minimal setup."
 version: 0.0.1
-homepage:
+homepage: https://github.com/ahmedemara231/pagination_helper
+repository: https://github.com/ahmedemara231/pagination_helper
 
 environment:
   sdk: ^3.6.0
