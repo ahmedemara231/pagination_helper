@@ -17,7 +17,7 @@ Add this to your `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  easy_pagination: ^1.0.0
+  easy_pagination: ^0.0.1
 ```
 
 Then run:
