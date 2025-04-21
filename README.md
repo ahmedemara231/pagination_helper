@@ -1,114 +1,150 @@
-# PaginatedList Widget
+# Easy Pagination
 
-A Flutter widget for implementing infinite scrolling lists with pagination functionality.
-
-## Overview
-
-`PaginatedList` is a versatile Flutter widget that handles pagination for list data. It automatically fetches more data when the user scrolls to the bottom of the list, maintaining the scroll position during loading to ensure a smooth user experience.
+A flexible and customizable Flutter package for handling paginated data with minimal setup.
 
 ## Features
 
-- Generic implementation to work with any data type
-- Automatic loading of next page when reaching the end of the list
-- Customizable item builder for flexible list item rendering
-- Optional custom loading indicator
-- Smart scroll position retention during loading
-- Support for mapping API responses to data models
+- Support for both ListView and GridView pagination
+- Automatic pagination handling on scroll
+- Pull-to-refresh functionality
+- Customizable loading and error states
+- Network connectivity handling
+- Controller for advanced data manipulation
 
 ## Installation
 
-No additional installation required. Just copy the provided files into your project.
+Add this to your `pubspec.yaml` file:
+
+```yaml
+dependencies:
+  easy_pagination: ^1.0.0
+```
+
+Then run:
+
+```
+flutter pub get
+```
 
 ## Usage
 
 ### Basic Example
 
 ```dart
-PaginatedList<ApiResponse, UserModel>(
-  asyncCall: (page) => userRepository.getUsers(page: page),
-  mapper: (response) => DataListAndPaginationData<UserModel>(
-    data: response.users,
-    paginationData: PaginationData(totalPages: response.totalPages),
+EasyPagination<ApiResponse, DataModel>.listView(
+  asyncCall: (page) => apiService.fetchData(page),
+  mapper: (response) => DataListAndPaginationData(
+    data: response.items,
+    paginationData: PaginationData(
+      totalPages: response.totalPages,
+    )
   ),
-  builder: (items, index) => UserListItem(user: items[index]),
-  loadingBuilder: const CustomLoadingIndicator(),
+  errorMapper: ErrorMapper(
+    errorWhenDio: (e) => 'Network error occurred',
+    errorWhenHttp: (e) => 'Server error occurred',
+  ),
+  itemBuilder: (data, index) => ListTile(
+    title: Text(data[index].title),
+    subtitle: Text(data[index].description),
+  ),
 )
 ```
 
-### Required Parameters
-
-- `asyncCall`: Function that fetches data for a given page number
-- `mapper`: Function that extracts the list items and pagination data from the response
-- `builder`: Function that builds the UI for each item in the list
-
-### Optional Parameters
-
-- `loadingBuilder`: Custom widget to display while loading data (defaults to CircularProgressIndicator)
-
-## Type Parameters
-
-- `T`: The type of the API response (e.g., ApiResponse, Map<String, dynamic>)
-- `E`: The type of items in the list (e.g., UserModel, Product)
-
-## Helper Classes
-
-### DataListAndPaginationData
-
-Container class that holds both the list items and pagination metadata.
+### GridView Example
 
 ```dart
-DataListAndPaginationData<UserModel>(
-  data: usersList,
-  paginationData: PaginationData(totalPages: 10),
+EasyPagination<ApiResponse, DataModel>.gridView(
+  asyncCall: (page) => apiService.fetchData(page),
+  mapper: (response) => DataListAndPaginationData(
+    data: response.items,
+    paginationData: PaginationData(
+      totalPages: response.totalPages,
+    )
+  ),
+  errorMapper: ErrorMapper(
+    errorWhenDio: (e) => 'Network error occurred',
+    errorWhenHttp: (e) => 'Server error occurred',
+  ),
+  itemBuilder: (data, index) => Card(
+    child: Column(
+      children: [
+        Image.network(data[index].imageUrl),
+        Text(data[index].title)
+      ],
+    ),
+  ),
+  crossAxisCount: 2,
+  childAspectRatio: 0.75,
+  mainAxisSpacing: 10,
+  crossAxisSpacing: 10,
 )
 ```
 
-### PaginationData
+## Parameters
 
-Class for storing pagination metadata.
+### Common Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `asyncCall` | `Future<T> Function(int currentPage)` | Function to fetch a page of data |
+| `mapper` | `DataListAndPaginationData<E> Function(T response)` | Function to map the API response to data and pagination information |
+| `errorMapper` | `ErrorMapper` | Object that maps different error types to error messages |
+| `itemBuilder` | `Widget Function(List<E> data, int index)` | Builder function for list items |
+| `onSuccess` | `Function(List<E> data)?` | Optional callback when data is successfully loaded |
+| `onError` | `Function(String errorMessage)?` | Optional callback when an error occurs |
+| `scrollPhysics` | `ScrollPhysics?` | Optional scroll physics for the list |
+| `showNoDataAlert` | `bool` | Whether to show an alert when there is no more data |
+| `refreshIndicatorBackgroundColor` | `Color?` | Background color for the refresh indicator |
+| `refreshIndicatorColor` | `Color?` | Color for the refresh indicator |
+| `loadingBuilder` | `Widget?` | Custom widget for loading state |
+| `errorBuilder` | `Widget Function(String errorMsg)?` | Custom builder for error state |
+| `controller` | `EasyPaginationController<E>?` | Optional controller for advanced data manipulation |
+| `shrinkWrap` | `bool?` | Whether the list should shrink-wrap its contents |
+| `scrollDirection` | `Axis?` | Direction in which the list scrolls |
+
+### GridView Specific Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `crossAxisCount` | `int?` | Number of columns in the grid |
+| `mainAxisSpacing` | `double?` | Space between rows |
+| `crossAxisSpacing` | `double?` | Space between columns |
+| `childAspectRatio` | `double?` | Aspect ratio of grid items |
+
+## Advanced Usage
+
+### Using the EasyPaginationController
 
 ```dart
-PaginationData(
-  totalPages: 10,
-  // Other pagination fields available for expansion
+final controller = EasyPaginationController<DataModel>();
+
+// Later in your code
+EasyPagination<ApiResponse, DataModel>.listView(
+  controller: controller,
+  // other parameters...
 )
+
+// Access and manipulate data
+final randomItem = controller.getRandomItem();
+final filteredItems = controller.filter((item) => item.isActive);
+controller.sort((a, b) => a.name.compareTo(b.name));
 ```
 
-### RetainableScrollController
+## Error Handling
 
-Extended ScrollController that can retain and restore scroll position.
+The package handles different types of errors:
 
-## Implementation Details
+1. **Network Errors**: Automatically detected and displayed with appropriate UI
+2. **API Errors**: Handled based on your `ErrorMapper` configuration
+3. **General Exceptions**: Captured and presented with fallback UIs
 
-1. When initialized, the widget fetches the first page of data
-2. A scroll listener monitors when the user reaches the bottom of the list
-3. When bottom is reached, it loads the next page while maintaining scroll position
-4. New items are appended to the existing list
+## Dependencies
 
-## Example: User List with Pagination
+This package requires:
+- `dio`: For network requests
+- `connectivity_plus`: For network connectivity checking
+- `lottie`: For animated loading and error states
 
-```dart
-class UserListScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Users')),
-      body: PaginatedList<UserResponse, User>(
-        asyncCall: (page) => UserService.getUsers(page: page),
-        mapper: (response) => DataListAndPaginationData(
-          data: response.users,
-          paginationData: PaginationData(totalPages: response.meta.totalPages),
-        ),
-        builder: (users, index) => UserListTile(user: users[index]),
-        loadingBuilder: const LoadingIndicator(),
-      ),
-    );
-  }
-}
-```
+## License
 
-## Notes
-
-- Make sure your API returns the total number of pages for proper pagination
-- The list automatically handles loading states and appending new items
-- Scroll position is maintained during loading to prevent UI jumps
+This package is available under the MIT License.
