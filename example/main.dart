@@ -1,5 +1,5 @@
+import 'package:easy_pagination/easy_pagination.dart';
 import 'package:flutter/material.dart';
-import '../easy_pagination.dart';
 
 void main() {
   runApp(const EasyPaginationExample());
