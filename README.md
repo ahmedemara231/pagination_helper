@@ -40,8 +40,8 @@ EasyPagination<ApiResponse, DataModel>.listView(
     )
   ),
   errorMapper: ErrorMapper(
-    errorWhenDio: (e) => 'Network error occurred',
-    errorWhenHttp: (e) => 'Server error occurred',
+    errorWhenDio: (e) => e.response?.data['errorMsg'],
+    errorWhenHttp: (e) => e.message,
   ),
   itemBuilder: (data, index) => ListTile(
     title: Text(data[index].title),
@@ -62,8 +62,8 @@ EasyPagination<ApiResponse, DataModel>.gridView(
     )
   ),
   errorMapper: ErrorMapper(
-    errorWhenDio: (e) => 'Network error occurred',
-    errorWhenHttp: (e) => 'Server error occurred',
+    errorWhenDio: (e) => e.response?.data['errorMsg'],
+    errorWhenHttp: (e) => e.message,
   ),
   itemBuilder: (data, index) => Card(
     child: Column(
