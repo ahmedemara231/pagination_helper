@@ -6,7 +6,7 @@ repository: https://github.com/ahmedemara231/pagination_helper
 #publish_to: https://pub.dev
 
 environment:
-  sdk: ^3.6.0
+  sdk: ^3.7.2
   flutter: ">=1.17.0"
 
 dependencies:
