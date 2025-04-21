@@ -16,6 +16,7 @@ enum AsyncCallStatus {initial, loading, success, error, networkError}
 // T is full response which includes data list and pagination data
 // E is specific model is the list
 class EasyPagination<T, E> extends StatefulWidget {
+  final ScrollPhysics? scrollPhysics;
   final bool showNoDataAlert;
   final RankingType rankingType;
   final Color? refreshIndicatorBackgroundColor;
@@ -43,6 +44,7 @@ class EasyPagination<T, E> extends StatefulWidget {
     required this.itemBuilder,
     this.onSuccess,
     this.onError,
+    this.scrollPhysics,
     this.showNoDataAlert = false,
     this.refreshIndicatorBackgroundColor,
     this.refreshIndicatorColor,
@@ -64,6 +66,7 @@ class EasyPagination<T, E> extends StatefulWidget {
     required this.itemBuilder,
     this.onSuccess,
     this.onError,
+    this.scrollPhysics,
     this.showNoDataAlert = false,
     this.refreshIndicatorBackgroundColor,
     this.refreshIndicatorColor,
@@ -235,6 +238,7 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
 
   Widget _listView() {
     return ListView.builder(
+      physics: widget.scrollPhysics?? const AlwaysScrollableScrollPhysics(),
       scrollDirection: widget.scrollDirection?? Axis.vertical,
       shrinkWrap: widget.shrinkWrap?? false,
       controller: scrollController,
@@ -261,6 +265,7 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
 
   Widget _gridView() {
     return GridView.count(
+      physics: widget.scrollPhysics?? const AlwaysScrollableScrollPhysics(),
       shrinkWrap: widget.shrinkWrap?? false,
       crossAxisCount: widget.crossAxisCount?? 2,
       mainAxisSpacing: widget.mainAxisSpacing?? 0.0,
