@@ -23,8 +23,8 @@ class EasyPaginationExample extends StatelessWidget {
               )
           ),
           errorMapper: ErrorMapper(
-            errorWhenDio: (e) => e.response?.data['errorMsg'],
-            errorWhenHttp: (e) => e.message,
+            errorWhenDio: (e) => e.response?.data['errorMsg'], // if you using Dio
+            errorWhenHttp: (e) => e.message, // if you using Http
           ),
           itemBuilder: (data, index) => ListTile(
             title: Text(data[index].title),
