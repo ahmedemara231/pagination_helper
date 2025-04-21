@@ -3,10 +3,10 @@ import 'dart:developer' as dev;
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:dio/dio.dart';
+import 'package:easy_pagination/widgets/pagination_helper_refresh_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:pagination_helper/widgets/pagination_helper_refresh_indicator.dart';
 import '../../../generated/assets.dart';
 import 'helpers/message_utils.dart';
 
