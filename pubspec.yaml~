@@ -33,5 +33,5 @@ dev_dependencies:
 flutter:
 
   # To add assets to your package, add an assets section, like this:
-  assets:
-    - assets/lottie
+   assets:
+     - assets/lottie
