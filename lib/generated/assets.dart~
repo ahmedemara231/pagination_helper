@@ -4,7 +4,7 @@ class Assets {
 
   static const String lottieApiError = 'assets/lottie/api_error.json';
   static const String lottieError = 'assets/lottie/error.json';
-  static const String lottieLoader = 'assets/lottie/loader.json';
+  static const String lottieLoader.json = 'assets/lottie/loader.json.dart';
   static const String lottieNoData = 'assets/lottie/no_data.json';
   static const String lottieNoInternet = 'assets/lottie/no_internet.json';
 
