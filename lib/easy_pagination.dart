@@ -335,9 +335,13 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
       onRefresh: () async => await _fetchData(isRefresh: true),
       refreshIndicatorBackgroundColor: widget.refreshIndicatorBackgroundColor,
       refreshIndicatorColor: widget.refreshIndicatorColor,
-      child: status == AsyncCallStatus.error || status == AsyncCallStatus.networkError?
-      _buildErrorWidget : status == AsyncCallStatus.loading?
-      _buildLoadingView : _buildSuccessWidget,
+      child: ValueListenableBuilder(
+        valueListenable: widget.controller._needToRefresh,
+        builder: (context, value, child) =>
+        status == AsyncCallStatus.error || status == AsyncCallStatus.networkError?
+        _buildErrorWidget : status == AsyncCallStatus.loading?
+        _buildLoadingView : _buildSuccessWidget,
+      ),
     );
   }
 }
@@ -411,6 +415,7 @@ class PaginationNetworkError extends EasyPaginationError{
 class EasyPaginationController<E> {
   // Make items a ValueNotifier
   final ValueNotifier<List<E>> _items = ValueNotifier<List<E>>([]);
+  final ValueNotifier<bool> _needToRefresh = ValueNotifier<bool>(false);
 
   void _notify(){
     _items.notifyListeners();
@@ -432,8 +437,7 @@ class EasyPaginationController<E> {
   }
 
   void filterAndUpdate(bool Function(E item) condition) {
-    final filteredList = _items.value.where(condition).toList();
-    _items.value = List.from(filteredList);
+    _items.value = List.from(filter(condition));
     _notify();
   }
 
@@ -443,19 +447,26 @@ class EasyPaginationController<E> {
     _notify();
   }
 
+  void executeWholeRefresh(){
+    _needToRefresh.value = !_needToRefresh.value;
+  }
+
   void addItem(E item) {
     _items.value.add(item);
-    _notify();
+    // _notify();
+    executeWholeRefresh();
   }
 
   void addItemAt(int index, E item) {
     _items.value.insert(index, item);
-    _notify();
+    // _notify();
+    executeWholeRefresh();
   }
 
   void addAtBeginning(E item) {
     _items.value.insert(0, item);
-    _notify();
+    // _notify();
+    executeWholeRefresh();
   }
 
   E? accessElement(int index) {
