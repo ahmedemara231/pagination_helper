@@ -5,17 +5,51 @@ void main() {
   runApp(const EasyPaginationExample());
 }
 
-class EasyPaginationExample extends StatelessWidget {
+class ExampleModel{
+  List<String> items;
+  int totalPages;
+
+  ExampleModel({
+    required this.items,
+    required this.totalPages
+  });
+}
+
+class EasyPaginationExample extends StatefulWidget {
   const EasyPaginationExample({super.key});
 
+  @override
+  State<EasyPaginationExample> createState() => _EasyPaginationExampleState();
+}
+
+class _EasyPaginationExampleState extends State<EasyPaginationExample> {
+  Future<ExampleModel> _fetchData(int currentPage) async {
+    await Future.delayed(const Duration(seconds: 2)); // simulate api call with current page
+    final items = List.generate(25, (index) => 'Item $index');
+    return ExampleModel(items: items, totalPages: 4);
+  }
+
+  late EasyPaginationController<String> _easyPaginationController;
+  @override
+  void initState() {
+    _easyPaginationController = EasyPaginationController<String>();
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _easyPaginationController.dispose();
+    super.dispose();
+  }
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Awesome Button Example',
       home: Scaffold(
         appBar: AppBar(title: const Text('Example Usage')),
-        body: EasyPagination<ApiResponse, DataModel>.listView(
-          asyncCall: (page) => apiService.fetchData(page),
+        body: EasyPagination<ExampleModel, String>.listView(
+          controller: _easyPaginationController,
+          asyncCall: (page)async => await _fetchData(page),
           mapper: (response) => DataListAndPaginationData(
               data: response.items,
               paginationData: PaginationData(
@@ -26,10 +60,7 @@ class EasyPaginationExample extends StatelessWidget {
             errorWhenDio: (e) => e.response?.data['errorMsg'], // if you using Dio
             errorWhenHttp: (e) => e.message, // if you using Http
           ),
-          itemBuilder: (data, index) => ListTile(
-            title: Text(data[index].title),
-            subtitle: Text(data[index].description),
-          ),
+          itemBuilder: (data, index) => Text(data[index])
         )
       ),
     );

@@ -1,0 +1,42 @@
+import 'package:easy_pagination/easy_pagination.dart';
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const EasyPaginationExample());
+}
+
+class EasyPaginationExample extends StatelessWidget {
+  const EasyPaginationExample({super.key});
+
+  Future<List<String>> _fetchData(int currentPage) async {
+    await Future.delayed(const Duration(seconds: 2)); // simulate api call with current page
+    return List.generate(25, (index) => 'Item $index');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Awesome Button Example',
+      home: Scaffold(
+        appBar: AppBar(title: const Text('Example Usage')),
+        body: EasyPagination<ApiResponse, DataModel>.listView(
+          asyncCall: (page) => apiService.fetchData(page),
+          mapper: (response) => DataListAndPaginationData(
+              data: response.items,
+              paginationData: PaginationData(
+                totalPages: response.totalPages,
+              )
+          ),
+          errorMapper: ErrorMapper(
+            errorWhenDio: (e) => e.response?.data['errorMsg'], // if you using Dio
+            errorWhenHttp: (e) => e.message, // if you using Http
+          ),
+          itemBuilder: (data, index) => ListTile(
+            title: Text(data[index].title),
+            subtitle: Text(data[index].description),
+          ),
+        )
+      ),
+    );
+  }
+}
