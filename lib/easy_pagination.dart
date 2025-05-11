@@ -452,7 +452,7 @@ class EasyPaginationController<E> {
   }
 
   void _checkAndNotify(){
-    if(_items.value.isEmpty){
+    if(_items.value.length == 1){
       _executeWholeRefresh();
     }else{
       _notify();

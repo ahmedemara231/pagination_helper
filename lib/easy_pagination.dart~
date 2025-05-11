@@ -447,26 +447,31 @@ class EasyPaginationController<E> {
     _notify();
   }
 
-  void executeWholeRefresh(){
+  void _executeWholeRefresh(){
     _needToRefresh.value = !_needToRefresh.value;
+  }
+
+  void _checkAndNotify(){
+    if(_items.value.isEmpty){
+      _executeWholeRefresh();
+    }else{
+      _notify();
+    }
   }
 
   void addItem(E item) {
     _items.value.add(item);
-    // _notify();
-    executeWholeRefresh();
+    _checkAndNotify();
   }
 
   void addItemAt(int index, E item) {
     _items.value.insert(index, item);
-    // _notify();
-    executeWholeRefresh();
+    _checkAndNotify();
   }
 
   void addAtBeginning(E item) {
     _items.value.insert(0, item);
-    // _notify();
-    executeWholeRefresh();
+    _checkAndNotify();
   }
 
   E? accessElement(int index) {
