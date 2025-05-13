@@ -487,19 +487,27 @@ class EasyPaginationController<E> {
     _notify();
   }
 
+  void _checkAndNotifyAfterRemoving(){
+    if(_items.value.isEmpty){
+      _executeWholeRefresh();
+    }else{
+      _notify();
+    }
+  }
+
   void removeItem(E item) {
     _items.value.remove(item);
-    _notify();
+    _checkAndNotifyAfterRemoving();
   }
 
   void removeAt(int index){
     _items.value.removeAt(index);
-    _notify();
+    _checkAndNotifyAfterRemoving();
   }
 
   void removeWhere(bool Function(E item) condition){
     _items.value.removeWhere(condition);
-    _notify();
+    _checkAndNotifyAfterRemoving();
   }
 
   void clear() {
