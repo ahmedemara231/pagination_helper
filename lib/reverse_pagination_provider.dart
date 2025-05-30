@@ -4,6 +4,7 @@ import 'dart:developer' as dev;
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:dio/dio.dart';
+import 'package:easy_pagination/widgets/text.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -27,23 +28,23 @@ extension AsyncCallStatusExtension on AsyncCallStatus {
 }
 
 
-// T is full response which includes data list and pagination data
-// E is specific model is the list
-class EasyPagination<T, E> extends StatefulWidget {
+// Response is full response which includes data list and pagination data
+// Model is specific model is the list
+class EasyPagination<Response, Model> extends StatefulWidget {
   final bool isReverse;
   final bool showNoDataAlert;
   final RankingType rankingType;
   final Color? refreshIndicatorBackgroundColor;
   final Color? refreshIndicatorColor;
   final ErrorMapper errorMapper;
-  final Function(int currentPage, List<E> data)? onSuccess;
+  final Function(int currentPage, List<Model> data)? onSuccess;
   final Function(int currentPage, String errorMessage)? onError;
-  final Future<T> Function(int currentPage) asyncCall;
-  final DataListAndPaginationData<E> Function(T response) mapper;
-  final Widget Function(List<E> data, int index, E element) itemBuilder;
+  final Future<Response> Function(int currentPage) asyncCall;
+  final DataListAndPaginationData<Model> Function(Response response) mapper;
+  final Widget Function(List<Model> data, int index, Model element) itemBuilder;
   final Widget? loadingBuilder;
   final Widget Function(String errorMsg)? errorBuilder;
-  final EasyPaginationController<E> controller;
+  final EasyPaginationController<Model> controller;
   final ScrollPhysics? scrollPhysics;
   final Axis? scrollDirection;
   final bool? shrinkWrap;
@@ -51,6 +52,8 @@ class EasyPagination<T, E> extends StatefulWidget {
   final double? crossAxisSpacing;
   final double? childAspectRatio;
   final int? crossAxisCount;
+  final String? noConnectionText;
+  final String? emptyListText;
 
   const EasyPagination.gridView({super.key,
     required this.controller,
@@ -73,6 +76,8 @@ class EasyPagination<T, E> extends StatefulWidget {
     this.childAspectRatio = 1,
     this.scrollDirection,
     this.crossAxisCount,
+    this.emptyListText,
+    this.noConnectionText
   }) : rankingType = RankingType.gridView;
 
   const EasyPagination.listView({super.key,
@@ -92,6 +97,8 @@ class EasyPagination<T, E> extends StatefulWidget {
     this.errorBuilder,
     this.shrinkWrap,
     this.scrollDirection,
+    this.emptyListText,
+    this.noConnectionText
   }) : rankingType = RankingType.listView,
         crossAxisCount = null,
         childAspectRatio = null,
@@ -99,10 +106,10 @@ class EasyPagination<T, E> extends StatefulWidget {
         mainAxisSpacing = null;
 
   @override
-  State<EasyPagination<T, E>> createState() => _EasyPaginationState<T, E>();
+  State<EasyPagination<Response, Model>> createState() => _EasyPaginationState<Response, Model>();
 }
 
-class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
+class _EasyPaginationState<Response, Model> extends State<EasyPagination<Response, Model>> {
   late RetainableScrollController scrollController;
   AsyncCallStatus status = AsyncCallStatus.initial;
   int currentPage = 1;
@@ -167,7 +174,7 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
     }
   }
 
-  Future<void> _fetchData(void Function(List<E> items) onUpdate)async{
+  Future<void> _fetchData(void Function(List<Model> items) onUpdate)async{
     setState(() => status = AsyncCallStatus.loading);
     scrollController.retainOffset();
     final mapperResult = await _manageMapper();
@@ -264,21 +271,21 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
     widget.controller._items.value.clear();
   }
 
-  Future<DataListAndPaginationData<E>> _manageMapper()async{
+  Future<DataListAndPaginationData<Model>> _manageMapper()async{
     final result = await _callApi(widget.asyncCall);
-    final DataListAndPaginationData<E> mapperResult = widget.mapper(result);
+    final DataListAndPaginationData<Model> mapperResult = widget.mapper(result);
 
     _manageTotalPagesNumber(mapperResult.paginationData.totalPages); // should be put in init state
     return mapperResult;
   }
 
-  Future<T> _callApi(Future<T> Function(int currentPage) asyncCall)async{
+  Future<Response> _callApi(Future<Response> Function(int currentPage) asyncCall)async{
     final connectivityResult = await Connectivity().checkConnectivity();
     switch(connectivityResult){
       case ConnectivityResult.none:
-        throw PaginationNetworkError('Check your internet connection');
+        throw PaginationNetworkError(widget.noConnectionText?? 'Check your internet connection');
       default:
-        final T result = await asyncCall(currentPage);
+        final Response result = await asyncCall(currentPage);
         return result;
     }
   }
@@ -292,13 +299,13 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
     return _listView();
   }
 
-  Widget _buildItemBuilder({required int index, required List<E> value}){
+  Widget _buildItemBuilder({required int index, required List<Model> value}){
     bool hasMoreData = currentPage <= totalPages;
     if (index < value.length) {
       return widget.itemBuilder(value, index, value[index]);
     } else {
       if(widget.showNoDataAlert && !hasMoreData){
-        return const Text('No more data', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey));
+        return const AppText('No more data', textAlign: TextAlign.center, color: Colors.grey);
       }else if(hasMoreData && status.isLoading){
         return _loadingWidget;
       }else{
@@ -307,7 +314,7 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
     }
   }
 
-  Widget _buildItemBuilderWhenReverse({required int index, required List<E> value}) {
+  Widget _buildItemBuilderWhenReverse({required int index, required List<Model> value}) {
     bool hasMoreData = currentPage <= totalPages;
     bool shouldShowLoading = hasMoreData && status.isLoading;
     bool shouldShowNoData = widget.showNoDataAlert && !hasMoreData;
@@ -316,10 +323,10 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
       if (shouldShowLoading) {
         return Center(child: _loadingWidget);
       } else {
-        return const Text(
+        return const AppText(
             'No more data',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey)
+            color: Colors.grey
         );
       }
     }
@@ -328,7 +335,7 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
     return widget.itemBuilder(value, dataIndex, value[dataIndex]);
   }
 
-  int _buildItemCount(List<E> value){
+  int _buildItemCount(List<Model> value){
     bool hasMoreData = currentPage <= totalPages;
     if((widget.showNoDataAlert && !hasMoreData) || (hasMoreData && status.isLoading)){
       return value.length + 1;
@@ -398,7 +405,7 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
   Widget get _buildErrorWidget{
     if(widget.controller._items.value.isNotEmpty){
       if(status == AsyncCallStatus.networkError){
-        MessageUtils.showSimpleToast(msg: 'Check your internet connection', color: Colors.red);
+        MessageUtils.showSimpleToast(msg: widget.noConnectionText?? 'Check your internet connection', color: Colors.red);
       }else{
         MessageUtils.showSimpleToast(msg: errorMsg, color: Colors.red);
       }
@@ -409,9 +416,9 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
           children: [
             Lottie.asset(Assets.lottieNoInternet),
             const SizedBox(height: 10),
-            const Text(
-                'Check your internet connection',
-                style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500)
+            Text(
+                widget.noConnectionText?? 'Check your internet connection',
+                style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500)
             )
           ],
         );
@@ -443,7 +450,7 @@ class _EasyPaginationState<T, E> extends State<EasyPagination<T, E>> {
         children: [
           Lottie.asset(Assets.lottieNoData),
           const SizedBox(height: 10),
-          const Text('There is no data right now!')
+          Text(widget.emptyListText?? 'There is no data right now!')
         ],
       );
     }
