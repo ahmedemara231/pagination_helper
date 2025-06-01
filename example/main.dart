@@ -1,4 +1,4 @@
-import 'package:easy_pagination/easy_pagination.dart';
+import 'package:easy_pagination/pagination_with_reverse_and_status_stream.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -54,13 +54,14 @@ class _EasyPaginationExampleState extends State<EasyPaginationExample> {
               data: response.items,
               paginationData: PaginationData(
                 totalPages: response.totalPages,
+                perPage: 10,
               )
           ),
           errorMapper: ErrorMapper(
             errorWhenDio: (e) => e.response?.data['errorMsg'], // if you using Dio
             errorWhenHttp: (e) => e.message, // if you using Http
           ),
-          itemBuilder: (data, index) => Text(data[index])
+          itemBuilder: (data, index, element) => Text(data[index])
         )
       ),
     );
