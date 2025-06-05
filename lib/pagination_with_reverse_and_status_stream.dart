@@ -4,7 +4,6 @@ import 'dart:developer' as dev;
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:dio/dio.dart';
-import 'package:easy_pagination/widgets/pagination_helper_refresh_indicator.dart';
 import 'package:easy_pagination/widgets/text.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
@@ -66,7 +65,6 @@ class EasyPagination<Response, Model> extends StatefulWidget {
   final Widget? loadingBuilder;
   final Widget Function(String errorMsg)? errorBuilder;
   final EasyPaginationController<Model> controller;
-  final ScrollPhysics? scrollPhysics;
   final Axis? scrollDirection;
   final bool? shrinkWrap;
   final double? mainAxisSpacing;
@@ -76,7 +74,7 @@ class EasyPagination<Response, Model> extends StatefulWidget {
   final String? noConnectionText;
   final String? emptyListText;
 
-  const EasyPagination.gridView({super.key,
+  EasyPagination.gridView({super.key,
     required this.controller,
     required this.asyncCall,
     required this.mapper,
@@ -86,7 +84,6 @@ class EasyPagination<Response, Model> extends StatefulWidget {
     this.isReverse = false,
     this.onSuccess,
     this.onError,
-    this.scrollPhysics,
     this.showNoDataAlert = false,
     this.refreshIndicatorBackgroundColor,
     this.refreshIndicatorColor,
@@ -100,9 +97,10 @@ class EasyPagination<Response, Model> extends StatefulWidget {
     this.crossAxisCount,
     this.emptyListText,
     this.noConnectionText
-  }) : rankingType = RankingType.gridView;
+  }) : rankingType = RankingType.gridView,
+        assert(errorMapper.errorWhenHttp != null || errorMapper.errorWhenDio != null);
 
-  const EasyPagination.listView({super.key,
+  EasyPagination.listView({super.key,
     required this.controller,
     required this.asyncCall,
     required this.mapper,
@@ -112,7 +110,6 @@ class EasyPagination<Response, Model> extends StatefulWidget {
     this.isReverse = false,
     this.onSuccess,
     this.onError,
-    this.scrollPhysics,
     this.showNoDataAlert = false,
     this.refreshIndicatorBackgroundColor,
     this.refreshIndicatorColor,
@@ -126,7 +123,9 @@ class EasyPagination<Response, Model> extends StatefulWidget {
         crossAxisCount = null,
         childAspectRatio = null,
         crossAxisSpacing = null,
-        mainAxisSpacing = null;
+        mainAxisSpacing = null,
+        assert(errorMapper.errorWhenHttp != null || errorMapper.errorWhenDio != null);
+
 
   @override
   State<EasyPagination<Response, Model>> createState() => _EasyPaginationState<Response, Model>();
@@ -376,7 +375,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     return ValueListenableBuilder(
       valueListenable: widget.controller._items,
       builder: (context, value, child) => ListView.builder(
-          physics: widget.scrollPhysics?? const AlwaysScrollableScrollPhysics(),
+        // physics: widget.scrollPhysics?? const AlwaysScrollableScrollPhysics(),
           scrollDirection: widget.scrollDirection?? Axis.vertical,
           shrinkWrap: widget.shrinkWrap?? false,
           controller: scrollController,
@@ -393,12 +392,12 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     return ValueListenableBuilder(
       valueListenable: widget.controller._items,
       builder: (context, value, child) => GridView.count(
-        physics: widget.scrollPhysics?? const AlwaysScrollableScrollPhysics(),
+        // physics: widget.scrollPhysics?? const AlwaysScrollableScrollPhysics(),
         shrinkWrap: widget.shrinkWrap?? false,
         crossAxisCount: widget.crossAxisCount?? 2,
         mainAxisSpacing: widget.mainAxisSpacing?? 0.0,
         crossAxisSpacing: widget.crossAxisSpacing?? 0.0,
-        childAspectRatio: widget.childAspectRatio?? 0.0,
+        childAspectRatio: widget.childAspectRatio?? 1,
         scrollDirection: widget.scrollDirection?? Axis.vertical,
         controller: scrollController,
         children: List.generate(
@@ -489,7 +488,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
       if(currentPage < totalPages){
         Future(() => null);
       }else{
-        _onScroll(isRefresh: true);
+        await _onScroll(isRefresh: true);
       }
     }
   }
@@ -706,5 +705,31 @@ class EasyPaginationController<E> {
 
   void dispose() {
     _items.dispose();
+  }
+}
+
+
+class PaginationHelperRefreshIndicator extends StatelessWidget {
+
+  final Future<void> Function() onRefresh;
+  final Widget child;
+  final Color? refreshIndicatorBackgroundColor;
+  final Color? refreshIndicatorColor;
+  const PaginationHelperRefreshIndicator({super.key,
+    required this.onRefresh,
+    this.refreshIndicatorBackgroundColor,
+    this.refreshIndicatorColor,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator.adaptive(
+        backgroundColor: refreshIndicatorBackgroundColor,
+        color: refreshIndicatorColor,
+        triggerMode: RefreshIndicatorTriggerMode.anywhere,
+        onRefresh: onRefresh,
+        child: child
+    );
   }
 }
