@@ -4,6 +4,7 @@ import 'dart:developer' as dev;
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:dio/dio.dart';
+import 'package:easy_pagination/helpers/add_frame.dart';
 import 'package:easy_pagination/widgets/text.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
@@ -271,9 +272,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
         widget.onSuccess!(currentPage, widget.controller._items.value);
       }
       if(widget.isReverse){
-        WidgetsBinding.instance.addPostFrameCallback((timeStamp) =>
-            _scrollDownWhileGetDataFirstTimeWhenReverse(),
-        );
+        Frame.addBefore(() => _scrollDownWhileGetDataFirstTimeWhenReverse());
       }
     } on PaginationNetworkError{
       setState(() => status.updateStatus(AsyncCallStatus.networkError));
@@ -612,22 +611,22 @@ class EasyPaginationController<E> {
     Duration? duration,
     Curve? curve
   })async{
-    await _scrollController!.animateTo(
-        _scrollController!.position.maxScrollExtent,
+    Frame.addBefore(() async => await _scrollController!.animateTo(
+    _scrollController!.position.maxScrollExtent,
         duration: duration?? const Duration(milliseconds: 300),
         curve: curve?? Curves.easeOutQuad
-    );
+    ));
   }
 
   Future<void> moveToMaxTop({
     Duration? duration,
     Curve? curve
   })async{
-    await _scrollController!.animateTo(
-        _scrollController!.position.minScrollExtent,
+    Frame.addBefore(() async => await _scrollController!.animateTo(
+    _scrollController!.position.minScrollExtent,
         duration: duration?? const Duration(milliseconds: 400),
         curve: curve?? Curves.easeOutQuad
-    );
+    ));
   }
 
   void _notify(){
