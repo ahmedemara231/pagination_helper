@@ -266,6 +266,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
         });
       }
       widget.controller.updateItems(newItems: mapperResult.data);
+      widget.controller._initScrollController(scrollController);
       if(widget.onSuccess != null){
         widget.onSuccess!(currentPage, widget.controller._items.value);
       }
@@ -302,7 +303,8 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     final result = await _callApi(widget.asyncCall);
     final DataListAndPaginationData<Model> mapperResult = widget.mapper(result);
 
-    _manageTotalPagesNumber(mapperResult.paginationData.totalPages); // should be put in init state
+    // should be called every time because the total pages may be changed
+    _manageTotalPagesNumber(mapperResult.paginationData.totalPages);
     return mapperResult;
   }
 
@@ -600,6 +602,33 @@ class PaginationNetworkError extends EasyPaginationError{
 class EasyPaginationController<E> {
   final ValueNotifier<List<E>> _items = ValueNotifier<List<E>>([]);
   final ValueNotifier<bool> _needToRefresh = ValueNotifier<bool>(false);
+
+  RetainableScrollController? _scrollController;
+  void _initScrollController(RetainableScrollController controller){
+    _scrollController ??= controller;
+  }
+
+  Future<void> moveToMaxBottom({
+    Duration? duration,
+    Curve? curve
+  })async{
+    await _scrollController!.animateTo(
+        _scrollController!.position.maxScrollExtent,
+        duration: duration?? const Duration(milliseconds: 300),
+        curve: curve?? Curves.easeOutQuad
+    );
+  }
+
+  Future<void> moveToMaxTop({
+    Duration? duration,
+    Curve? curve
+  })async{
+    await _scrollController!.animateTo(
+        _scrollController!.position.minScrollExtent,
+        duration: duration?? const Duration(milliseconds: 400),
+        curve: curve?? Curves.easeOutQuad
+    );
+  }
 
   void _notify(){
     _items.notifyListeners();
