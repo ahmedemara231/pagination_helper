@@ -374,15 +374,18 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
   Widget _listView() {
     return ValueListenableBuilder(
       valueListenable: widget.controller._items,
-      builder: (context, value, child) => ListView.builder(
-        // physics: widget.scrollPhysics?? const AlwaysScrollableScrollPhysics(),
-          scrollDirection: widget.scrollDirection?? Axis.vertical,
-          shrinkWrap: widget.shrinkWrap?? false,
-          controller: scrollController,
-          itemCount: _buildItemCount(value),
-          itemBuilder: (context, index) => widget.isReverse?
-          _buildItemBuilderWhenReverse(index: index, value: value) :
-          _buildItemBuilder(index: index, value: value)
+      builder: (context, value, child) => Align(
+        alignment: widget.isReverse? Alignment.bottomCenter : Alignment.topCenter,
+        child: ListView.builder(
+          // physics: widget.scrollPhysics?? const AlwaysScrollableScrollPhysics(),
+            scrollDirection: widget.scrollDirection?? Axis.vertical,
+            shrinkWrap: widget.shrinkWrap?? false,
+            controller: scrollController,
+            itemCount: _buildItemCount(value),
+            itemBuilder: (context, index) => widget.isReverse?
+            _buildItemBuilderWhenReverse(index: index, value: value) :
+            _buildItemBuilder(index: index, value: value)
+        ),
       ),
     );
   }
@@ -391,19 +394,22 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
   Widget _gridView() {
     return ValueListenableBuilder(
       valueListenable: widget.controller._items,
-      builder: (context, value, child) => GridView.count(
-        // physics: widget.scrollPhysics?? const AlwaysScrollableScrollPhysics(),
-        shrinkWrap: widget.shrinkWrap?? false,
-        crossAxisCount: widget.crossAxisCount?? 2,
-        mainAxisSpacing: widget.mainAxisSpacing?? 0.0,
-        crossAxisSpacing: widget.crossAxisSpacing?? 0.0,
-        childAspectRatio: widget.childAspectRatio?? 1,
-        scrollDirection: widget.scrollDirection?? Axis.vertical,
-        controller: scrollController,
-        children: List.generate(
-          _buildItemCount(value), (index) => widget.isReverse?
-        _buildItemBuilderWhenReverse(index: index, value: value) :
-        _buildItemBuilder(index: index, value: value),
+      builder: (context, value, child) => Align(
+        alignment: widget.isReverse? Alignment.bottomCenter : Alignment.topCenter,
+        child: GridView.count(
+          // physics: widget.scrollPhysics?? const AlwaysScrollableScrollPhysics(),
+          shrinkWrap: widget.shrinkWrap?? false,
+          crossAxisCount: widget.crossAxisCount?? 2,
+          mainAxisSpacing: widget.mainAxisSpacing?? 0.0,
+          crossAxisSpacing: widget.crossAxisSpacing?? 0.0,
+          childAspectRatio: widget.childAspectRatio?? 1,
+          scrollDirection: widget.scrollDirection?? Axis.vertical,
+          controller: scrollController,
+          children: List.generate(
+            _buildItemCount(value), (index) => widget.isReverse?
+          _buildItemBuilderWhenReverse(index: index, value: value) :
+          _buildItemBuilder(index: index, value: value),
+          ),
         ),
       ),
     );

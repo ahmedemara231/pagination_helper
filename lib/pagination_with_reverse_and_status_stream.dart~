@@ -4,13 +4,12 @@ import 'dart:developer' as dev;
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:dio/dio.dart';
+import 'package:easy_pagination/widgets/text.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_base/src/core/widgets/app_text.dart';
-import 'package:flutter_base/src/core/widgets/custom_messages.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:lottie/lottie.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../../generated/assets.dart';
+import 'helpers/message_utils.dart';
 
 enum RankingType {gridView, listView}
 enum AsyncCallStatus {
@@ -422,7 +421,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     switch(widget.loadingBuilder){
       case null:
         return Center(child: SizedBox.square(
-            dimension: 30.r,
+            dimension: 30,
             child: const CircularProgressIndicator())
         );
       default:
