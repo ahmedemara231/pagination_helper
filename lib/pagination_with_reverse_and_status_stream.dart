@@ -335,27 +335,29 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     if (index < value.length) {
       return widget.itemBuilder(value, index, value[index]);
     } else {
-      if(_shouldShowNoData){
-        return const AppText('No more data', textAlign: TextAlign.center, color: Colors.grey);
-      }else if(_shouldShowLoading){
-        return _loadingWidget;
-      }else{
-        return widget.itemBuilder(value, index, value[index]);
-      }
+      return _buildGridExtraItemSuchNoMoreDataOrLoading(defaultWidget: widget.itemBuilder(value, index, value[index]));
+      // if(_shouldShowNoData){
+      //   return const AppText('No more data', textAlign: TextAlign.center, color: Colors.grey);
+      // }else if(_shouldShowLoading){
+      //   return _loadingWidget;
+      // }else{
+      //   return widget.itemBuilder(value, index, value[index]);
+      // }
     }
   }
 
   Widget _buildItemBuilderWhenReverse({required int index, required List<Model> value}) {
     if (index == 0 && (_shouldShowLoading || _shouldShowNoData)) {
-      if (_shouldShowLoading) {
-        return Center(child: _loadingWidget);
-      } else {
-        return const AppText(
-            'No more data',
-            textAlign: TextAlign.center,
-            color: Colors.grey
-        );
-      }
+      return _buildGridExtraItemSuchNoMoreDataOrLoading();
+      // if (_shouldShowLoading) {
+      //   return Center(child: _loadingWidget);
+      // } else {
+      //   return const AppText(
+      //       'No more data',
+      //       textAlign: TextAlign.center,
+      //       color: Colors.grey
+      //   );
+      // }
     }
 
     int dataIndex = (_shouldShowLoading || _shouldShowNoData) ? index - 1 : index;
@@ -388,13 +390,13 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     );
   }
 
-  Widget get _buildGridExtraItemSuchNoMoreDataOrLoading{
+  Widget _buildGridExtraItemSuchNoMoreDataOrLoading({Widget defaultWidget = const SizedBox.shrink()}){
     if(_shouldShowNoData){
       return const AppText('No more data', textAlign: TextAlign.center, color: Colors.grey);
     }else if(_shouldShowLoading){
       return _loadingWidget;
     }else{
-      return const SizedBox.shrink();
+      return defaultWidget;
     }
   }
 
@@ -409,7 +411,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
           MainAxisAlignment.end : MainAxisAlignment.start,
           children: [
             if(widget.isReverse)
-              _buildGridExtraItemSuchNoMoreDataOrLoading,
+              _buildGridExtraItemSuchNoMoreDataOrLoading(),
             GridView.count(
               shrinkWrap: widget.shrinkWrap!,
               crossAxisCount: widget.crossAxisCount?? 2,
@@ -424,7 +426,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
               ),
             ),
             if(!widget.isReverse)
-              _buildGridExtraItemSuchNoMoreDataOrLoading,
+              _buildGridExtraItemSuchNoMoreDataOrLoading(),
           ],
         ),
       ),
