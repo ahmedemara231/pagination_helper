@@ -342,8 +342,8 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     }
   }
 
+  bool get hasMoreData => currentPage <= totalPages;
   Widget _buildItemBuilderWhenReverse({required int index, required List<Model> value}) {
-    bool hasMoreData = currentPage <= totalPages;
     bool shouldShowLoading = hasMoreData && status._status.isLoading;
     bool shouldShowNoData = widget.showNoDataAlert && !hasMoreData;
 
@@ -364,7 +364,6 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
   }
 
   int _buildItemCount(List<Model> value){
-    bool hasMoreData = currentPage <= totalPages;
     if((widget.showNoDataAlert && !hasMoreData) || (hasMoreData && status._status.isLoading)){
       return value.length + 1;
     }else{
@@ -372,13 +371,43 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     }
   }
 
+  Widget _gridView() {
+    return ValueListenableBuilder(
+      valueListenable: widget.controller._items,
+      builder: (context, value, child) => Align(
+        alignment: widget.isReverse? Alignment.bottomCenter : Alignment.topCenter,
+        child: Column(
+          children: [
+            if(widget.isReverse && status._status.isLoading && hasMoreData)
+              _loadingWidget,
+            GridView.count(
+              shrinkWrap: true,
+              crossAxisCount: widget.crossAxisCount?? 2,
+              mainAxisSpacing: widget.mainAxisSpacing?? 0.0,
+              crossAxisSpacing: widget.crossAxisSpacing?? 0.0,
+              childAspectRatio: widget.childAspectRatio?? 1,
+              scrollDirection: widget.scrollDirection?? Axis.vertical,
+              controller: scrollController,
+              children: List.generate(
+                value.length,
+                    (index) => widget.itemBuilder(value, index, value[index]),
+              ),
+            ),
+            if(!widget.isReverse && status._status.isLoading && hasMoreData)
+              _loadingWidget,
+          ],
+        ),
+      ),
+    );
+  }
+
+
   Widget _listView() {
     return ValueListenableBuilder(
       valueListenable: widget.controller._items,
       builder: (context, value, child) => Align(
         alignment: widget.isReverse? Alignment.bottomCenter : Alignment.topCenter,
         child: ListView.builder(
-          // physics: widget.scrollPhysics?? const AlwaysScrollableScrollPhysics(),
             scrollDirection: widget.scrollDirection?? Axis.vertical,
             shrinkWrap: widget.shrinkWrap?? false,
             controller: scrollController,
@@ -391,30 +420,28 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     );
   }
 
-
-  Widget _gridView() {
-    return ValueListenableBuilder(
-      valueListenable: widget.controller._items,
-      builder: (context, value, child) => Align(
-        alignment: widget.isReverse? Alignment.bottomCenter : Alignment.topCenter,
-        child: GridView.count(
-          // physics: widget.scrollPhysics?? const AlwaysScrollableScrollPhysics(),
-          shrinkWrap: widget.shrinkWrap?? false,
-          crossAxisCount: widget.crossAxisCount?? 2,
-          mainAxisSpacing: widget.mainAxisSpacing?? 0.0,
-          crossAxisSpacing: widget.crossAxisSpacing?? 0.0,
-          childAspectRatio: widget.childAspectRatio?? 1,
-          scrollDirection: widget.scrollDirection?? Axis.vertical,
-          controller: scrollController,
-          children: List.generate(
-            _buildItemCount(value), (index) => widget.isReverse?
-          _buildItemBuilderWhenReverse(index: index, value: value) :
-          _buildItemBuilder(index: index, value: value),
-          ),
-        ),
-      ),
-    );
-  }
+  // Widget _gridView() {
+  //   return ValueListenableBuilder(
+  //     valueListenable: widget.controller._items,
+  //     builder: (context, value, child) => Align(
+  //       alignment: widget.isReverse? Alignment.bottomCenter : Alignment.topCenter,
+  //       child: GridView.count(
+  //         shrinkWrap: widget.shrinkWrap?? false,
+  //         crossAxisCount: widget.crossAxisCount?? 2,
+  //         mainAxisSpacing: widget.mainAxisSpacing?? 0.0,
+  //         crossAxisSpacing: widget.crossAxisSpacing?? 0.0,
+  //         childAspectRatio: widget.childAspectRatio?? 1,
+  //         scrollDirection: widget.scrollDirection?? Axis.vertical,
+  //         controller: scrollController,
+  //         children: List.generate(
+  //           _buildItemCount(value), (index) => widget.isReverse?
+  //         _buildItemBuilderWhenReverse(index: index, value: value) :
+  //         _buildItemBuilder(index: index, value: value),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget get _buildLoadingView{
     if(widget.controller._items.value.isEmpty){
