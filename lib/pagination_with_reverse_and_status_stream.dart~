@@ -377,7 +377,6 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
       builder: (context, value, child) => Align(
         alignment: widget.isReverse? Alignment.bottomCenter : Alignment.topCenter,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             if(widget.isReverse && status._status.isLoading && hasMoreData)
               _loadingWidget,
