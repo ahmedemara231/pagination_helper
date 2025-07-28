@@ -390,6 +390,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
                 crossAxisSpacing: widget.crossAxisSpacing?? 0.0,
                 childAspectRatio: widget.childAspectRatio?? 1,
                 scrollDirection: widget.scrollDirection?? Axis.vertical,
+                physics: NeverScrollableScrollPhysics(),
                 // controller: scrollController,
                 children: List.generate(
                   value.length,
