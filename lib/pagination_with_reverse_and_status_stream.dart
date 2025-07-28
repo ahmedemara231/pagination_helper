@@ -376,27 +376,30 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
       valueListenable: widget.controller._items,
       builder: (context, value, child) => Align(
         alignment: widget.isReverse? Alignment.bottomCenter : Alignment.topCenter,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            if(widget.isReverse && status._status.isLoading && hasMoreData)
-              _loadingWidget,
-            GridView.count(
-              shrinkWrap: true,
-              crossAxisCount: widget.crossAxisCount?? 2,
-              mainAxisSpacing: widget.mainAxisSpacing?? 0.0,
-              crossAxisSpacing: widget.crossAxisSpacing?? 0.0,
-              childAspectRatio: widget.childAspectRatio?? 1,
-              scrollDirection: widget.scrollDirection?? Axis.vertical,
-              controller: scrollController,
-              children: List.generate(
-                value.length,
-                    (index) => widget.itemBuilder(value, index, value[index]),
+        child: SingleChildScrollView(
+          controller: scrollController,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if(widget.isReverse && status._status.isLoading && hasMoreData)
+                _loadingWidget,
+              GridView.count(
+                shrinkWrap: true,
+                crossAxisCount: widget.crossAxisCount?? 2,
+                mainAxisSpacing: widget.mainAxisSpacing?? 0.0,
+                crossAxisSpacing: widget.crossAxisSpacing?? 0.0,
+                childAspectRatio: widget.childAspectRatio?? 1,
+                scrollDirection: widget.scrollDirection?? Axis.vertical,
+                // controller: scrollController,
+                children: List.generate(
+                  value.length,
+                      (index) => widget.itemBuilder(value, index, value[index]),
+                ),
               ),
-            ),
-            if(!widget.isReverse && status._status.isLoading && hasMoreData)
-              _loadingWidget,
-          ],
+              if(!widget.isReverse && status._status.isLoading && hasMoreData)
+                _loadingWidget,
+            ],
+          ),
         ),
       ),
     );
