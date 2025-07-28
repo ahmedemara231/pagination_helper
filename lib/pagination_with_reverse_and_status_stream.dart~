@@ -389,6 +389,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     return ValueListenableBuilder(
       valueListenable: widget.controller._items,
       builder: (context, value, child) => SingleChildScrollView(
+        reverse: true,
         controller: _scrollController,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
