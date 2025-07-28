@@ -90,7 +90,6 @@ class EasyPagination<Response, Model> extends StatefulWidget {
     this.refreshIndicatorColor,
     this.loadingBuilder,
     this.errorBuilder,
-    this.shrinkWrap,
     this.mainAxisSpacing,
     this.crossAxisSpacing,
     this.childAspectRatio = 1,
@@ -98,7 +97,7 @@ class EasyPagination<Response, Model> extends StatefulWidget {
     this.crossAxisCount,
     this.emptyListText,
     this.noConnectionText
-  }) : rankingType = RankingType.gridView,
+  }) : rankingType = RankingType.gridView, shrinkWrap = true,
         assert(errorMapper.errorWhenHttp != null || errorMapper.errorWhenDio != null);
 
   EasyPagination.listView({super.key,
@@ -402,33 +401,31 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
   Widget _gridView() {
     return ValueListenableBuilder(
       valueListenable: widget.controller._items,
-      builder: (context, value, child) => Align(
-        alignment: widget.isReverse? Alignment.bottomCenter : Alignment.topCenter,
-        child: SingleChildScrollView(
-          controller: _scrollController,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              if(widget.isReverse)
-                _buildGridExtraItemSuchNoMoreDataOrLoading,
-              GridView.count(
-                shrinkWrap: true,
-                crossAxisCount: widget.crossAxisCount?? 2,
-                mainAxisSpacing: widget.mainAxisSpacing?? 0.0,
-                crossAxisSpacing: widget.crossAxisSpacing?? 0.0,
-                childAspectRatio: widget.childAspectRatio?? 1,
-                scrollDirection: widget.scrollDirection?? Axis.vertical,
-                physics: const NeverScrollableScrollPhysics(),
-                // controller: scrollController,
-                children: List.generate(
-                  value.length,
-                      (index) => widget.itemBuilder(value, index, value[index]),
-                ),
+      builder: (context, value, child) => SingleChildScrollView(
+        controller: _scrollController,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: widget.isReverse?
+          MainAxisAlignment.end : MainAxisAlignment.start,
+          children: [
+            if(widget.isReverse)
+              _buildGridExtraItemSuchNoMoreDataOrLoading,
+            GridView.count(
+              shrinkWrap: widget.shrinkWrap!,
+              crossAxisCount: widget.crossAxisCount?? 2,
+              mainAxisSpacing: widget.mainAxisSpacing?? 0.0,
+              crossAxisSpacing: widget.crossAxisSpacing?? 0.0,
+              childAspectRatio: widget.childAspectRatio?? 1,
+              scrollDirection: widget.scrollDirection?? Axis.vertical,
+              physics: const NeverScrollableScrollPhysics(),
+              children: List.generate(
+                value.length,
+                    (index) => widget.itemBuilder(value, index, value[index]),
               ),
-              if(!widget.isReverse)
-                _buildGridExtraItemSuchNoMoreDataOrLoading,
-            ],
-          ),
+            ),
+            if(!widget.isReverse)
+              _buildGridExtraItemSuchNoMoreDataOrLoading,
+          ],
         ),
       ),
     );
