@@ -133,7 +133,7 @@ class EasyPagination<Response, Model> extends StatefulWidget {
 }
 
 class _EasyPaginationState<Response, Model> extends State<EasyPagination<Response, Model>> {
-  late RetainableScrollController scrollController;
+  late RetainableScrollController _scrollController;
   AsyncCallStatusInterceptor status = AsyncCallStatusInterceptor(AsyncCallStatus.initial);
   // AsyncCallStatus status = AsyncCallStatus.initial;
   int currentPage = 1;
@@ -142,8 +142,8 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
   @override
   void initState() {
     super.initState();
-    scrollController = RetainableScrollController();
-    scrollController.addListener(() => _onScroll());
+    _scrollController = RetainableScrollController();
+    _scrollController.addListener(() => _onScroll());
     if(widget.onUpdateStatus != null){
       status.listenStatusChanges.listen((event) => widget.onUpdateStatus!(event));
     }
@@ -152,7 +152,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
 
   @override
   void dispose() {
-    scrollController.dispose();
+    _scrollController.dispose();
     status.dispose();
     super.dispose();
   }
@@ -160,15 +160,15 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
   Future<void> _startScrolling() async{
     switch(widget.isReverse){
       case true:
-        if (scrollController.position.pixels ==
-            scrollController.position.minScrollExtent &&
+        if (_scrollController.position.pixels ==
+            _scrollController.position.minScrollExtent &&
             !status._status.isLoading &&
             currentPage <= totalPages){
           _fetchDataWhenScrollUp();
         }
       default:
-        if (scrollController.position.pixels ==
-            scrollController.position.maxScrollExtent &&
+        if (_scrollController.position.pixels ==
+            _scrollController.position.maxScrollExtent &&
             !status._status.isLoading &&
             currentPage <= totalPages) {
           await _fetchDataWhenScrollDown();
@@ -204,7 +204,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
 
   Future<void> _fetchData(void Function(List<Model> items) onUpdate)async{
     setState(() => status.updateStatus(AsyncCallStatus.loading));
-    scrollController.retainOffset();
+    _scrollController.retainOffset();
     final mapperResult = await _manageMapper();
     if(currentPage <= mapperResult.paginationData.totalPages.toInt()){
       setState(() {
@@ -216,7 +216,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     if(widget.onSuccess != null){
       widget.onSuccess!(currentPage, widget.controller._items.value);
     }
-    scrollController.restoreOffset(
+    _scrollController.restoreOffset(
         isReverse: widget.isReverse,
         subList: mapperResult.data,
         totalCurrentItems: widget.controller._items.value.length
@@ -247,8 +247,8 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
   }
 
   void _scrollDownWhileGetDataFirstTimeWhenReverse(){
-    scrollController.jumpTo(
-      scrollController.position.maxScrollExtent,
+    _scrollController.jumpTo(
+      _scrollController.position.maxScrollExtent,
     );
   }
 
@@ -257,7 +257,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
       _resetDataWhenRefresh();
     }
     setState(() => status.updateStatus(AsyncCallStatus.loading));
-    scrollController.retainOffset();
+    _scrollController.retainOffset();
     try {
       final mapperResult = await _manageMapper();
       if(currentPage <= mapperResult.paginationData.totalPages.toInt()){
@@ -267,7 +267,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
         });
       }
       widget.controller.updateItems(newItems: mapperResult.data);
-      widget.controller._initScrollController(scrollController);
+      widget.controller._initScrollController(_scrollController);
       if(widget.onSuccess != null){
         widget.onSuccess!(currentPage, widget.controller._items.value);
       }
@@ -327,14 +327,18 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     return _listView();
   }
 
+
+  bool get _hasMoreData => currentPage <= totalPages;
+  bool get _shouldShowLoading => _hasMoreData && status._status.isLoading;
+  bool get _shouldShowNoData => widget.showNoDataAlert && !_hasMoreData;
+
   Widget _buildItemBuilder({required int index, required List<Model> value}){
-    bool hasMoreData = currentPage <= totalPages;
     if (index < value.length) {
       return widget.itemBuilder(value, index, value[index]);
     } else {
-      if(widget.showNoDataAlert && !hasMoreData){
+      if(_shouldShowNoData){
         return const AppText('No more data', textAlign: TextAlign.center, color: Colors.grey);
-      }else if(hasMoreData && status._status.isLoading){
+      }else if(_shouldShowLoading){
         return _loadingWidget;
       }else{
         return widget.itemBuilder(value, index, value[index]);
@@ -342,13 +346,11 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     }
   }
 
-  bool get hasMoreData => currentPage <= totalPages;
   Widget _buildItemBuilderWhenReverse({required int index, required List<Model> value}) {
-    bool shouldShowLoading = hasMoreData && status._status.isLoading;
-    bool shouldShowNoData = widget.showNoDataAlert && !hasMoreData;
 
-    if (index == 0 && (shouldShowLoading || shouldShowNoData)) {
-      if (shouldShowLoading) {
+
+    if (index == 0 && (_shouldShowLoading || _shouldShowNoData)) {
+      if (_shouldShowLoading) {
         return Center(child: _loadingWidget);
       } else {
         return const AppText(
@@ -359,52 +361,17 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
       }
     }
 
-    int dataIndex = (shouldShowLoading || shouldShowNoData) ? index - 1 : index;
+    int dataIndex = (_shouldShowLoading || _shouldShowNoData) ? index - 1 : index;
     return widget.itemBuilder(value, dataIndex, value[dataIndex]);
   }
 
   int _buildItemCount(List<Model> value){
-    if((widget.showNoDataAlert && !hasMoreData) || (hasMoreData && status._status.isLoading)){
+    if((_shouldShowNoData) || (_shouldShowLoading)){
       return value.length + 1;
     }else{
       return value.length;
     }
   }
-
-  Widget _gridView() {
-    return ValueListenableBuilder(
-      valueListenable: widget.controller._items,
-      builder: (context, value, child) => Align(
-        alignment: widget.isReverse? Alignment.bottomCenter : Alignment.topCenter,
-        child: SingleChildScrollView(
-          controller: scrollController,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              if(widget.isReverse && status._status.isLoading && hasMoreData)
-                _loadingWidget,
-              GridView.count(
-                shrinkWrap: true,
-                crossAxisCount: widget.crossAxisCount?? 2,
-                mainAxisSpacing: widget.mainAxisSpacing?? 0.0,
-                crossAxisSpacing: widget.crossAxisSpacing?? 0.0,
-                childAspectRatio: widget.childAspectRatio?? 1,
-                scrollDirection: widget.scrollDirection?? Axis.vertical,
-                // controller: scrollController,
-                children: List.generate(
-                  value.length,
-                      (index) => widget.itemBuilder(value, index, value[index]),
-                ),
-              ),
-              if(!widget.isReverse && status._status.isLoading && hasMoreData)
-                _loadingWidget,
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
 
   Widget _listView() {
     return ValueListenableBuilder(
@@ -414,11 +381,56 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
         child: ListView.builder(
             scrollDirection: widget.scrollDirection?? Axis.vertical,
             shrinkWrap: widget.shrinkWrap?? false,
-            controller: scrollController,
+            controller: _scrollController,
             itemCount: _buildItemCount(value),
             itemBuilder: (context, index) => widget.isReverse?
             _buildItemBuilderWhenReverse(index: index, value: value) :
             _buildItemBuilder(index: index, value: value)
+        ),
+      ),
+    );
+  }
+
+  Widget get _buildGridExtraItemSuchNoMoreDataOrLoading{
+    if(_shouldShowNoData){
+      return const AppText('No more data', textAlign: TextAlign.center, color: Colors.grey);
+    }else if(_shouldShowLoading){
+      return _loadingWidget;
+    }else{
+      return const SizedBox.shrink();
+    }
+  }
+
+  Widget _gridView() {
+    return ValueListenableBuilder(
+      valueListenable: widget.controller._items,
+      builder: (context, value, child) => Align(
+        alignment: widget.isReverse? Alignment.bottomCenter : Alignment.topCenter,
+        child: SingleChildScrollView(
+          controller: _scrollController,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if(widget.isReverse && status._status.isLoading && _hasMoreData)
+                _buildGridExtraItemSuchNoMoreDataOrLoading,
+              GridView.count(
+                shrinkWrap: true,
+                crossAxisCount: widget.crossAxisCount?? 2,
+                mainAxisSpacing: widget.mainAxisSpacing?? 0.0,
+                crossAxisSpacing: widget.crossAxisSpacing?? 0.0,
+                childAspectRatio: widget.childAspectRatio?? 1,
+                scrollDirection: widget.scrollDirection?? Axis.vertical,
+                physics: const NeverScrollableScrollPhysics(),
+                // controller: scrollController,
+                children: List.generate(
+                  value.length,
+                      (index) => widget.itemBuilder(value, index, value[index]),
+                ),
+              ),
+              if(!widget.isReverse && status._status.isLoading && _hasMoreData)
+                _buildGridExtraItemSuchNoMoreDataOrLoading,
+            ],
+          ),
         ),
       ),
     );
