@@ -331,28 +331,31 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
   bool get _shouldShowLoading => _hasMoreData && status._status.isLoading;
   bool get _shouldShowNoData => widget.showNoDataAlert && !_hasMoreData;
 
-  Widget get _noMoreDataTextWidget => const AppText('No more data', textAlign: TextAlign.center, color: Colors.grey);
-  Widget _buildExtraItemSuchNoMoreDataOrLoading({Widget defaultWidget = const SizedBox.shrink()}) {
-    if(_shouldShowNoData){
-      return _noMoreDataTextWidget;
-    }else if(_shouldShowLoading){
-      return _loadingWidget;
-    }else{
-      return defaultWidget;
-    }
-  }
-
   Widget _buildItemBuilder({required int index, required List<Model> value}){
     if (index < value.length) {
       return widget.itemBuilder(value, index, value[index]);
     } else {
-      return _buildExtraItemSuchNoMoreDataOrLoading(defaultWidget: widget.itemBuilder(value, index, value[index]));
+      if(_shouldShowNoData){
+        return const AppText('No more data', textAlign: TextAlign.center, color: Colors.grey);
+      }else if(_shouldShowLoading){
+        return _loadingWidget;
+      }else{
+        return widget.itemBuilder(value, index, value[index]);
+      }
     }
   }
 
   Widget _buildItemBuilderWhenReverse({required int index, required List<Model> value}) {
     if (index == 0 && (_shouldShowLoading || _shouldShowNoData)) {
-      _buildExtraItemSuchNoMoreDataOrLoading();
+      if (_shouldShowLoading) {
+        return Center(child: _loadingWidget);
+      } else {
+        return const AppText(
+            'No more data',
+            textAlign: TextAlign.center,
+            color: Colors.grey
+        );
+      }
     }
 
     int dataIndex = (_shouldShowLoading || _shouldShowNoData) ? index - 1 : index;
@@ -385,11 +388,20 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     );
   }
 
+  Widget _buildGridExtraItemSuchNoMoreDataOrLoading({Widget defaultWidget = const SizedBox.shrink()}) {
+    if(_shouldShowNoData){
+      return const AppText('No more data', textAlign: TextAlign.center, color: Colors.grey);
+    }else if(_shouldShowLoading){
+      return _loadingWidget;
+    }else{
+      return defaultWidget;
+    }
+  }
+
   Widget _gridView() {
     return ValueListenableBuilder(
       valueListenable: widget.controller._items,
       builder: (context, value, child) => SingleChildScrollView(
-        reverse: true,
         controller: _scrollController,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -397,7 +409,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
           MainAxisAlignment.end : MainAxisAlignment.start,
           children: [
             if(widget.isReverse)
-              _buildExtraItemSuchNoMoreDataOrLoading(),
+              _buildGridExtraItemSuchNoMoreDataOrLoading(),
             GridView.count(
               shrinkWrap: widget.shrinkWrap!,
               crossAxisCount: widget.crossAxisCount?? 2,
@@ -412,7 +424,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
               ),
             ),
             if(!widget.isReverse)
-              _buildExtraItemSuchNoMoreDataOrLoading(),
+              _buildGridExtraItemSuchNoMoreDataOrLoading(),
           ],
         ),
       ),

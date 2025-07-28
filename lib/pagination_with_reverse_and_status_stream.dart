@@ -388,13 +388,13 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     );
   }
 
-  Widget _buildGridExtraItemSuchNoMoreDataOrLoading({Widget defaultWidget = const SizedBox.shrink()}) {
+  Widget get _buildGridExtraItemSuchNoMoreDataOrLoading{
     if(_shouldShowNoData){
       return const AppText('No more data', textAlign: TextAlign.center, color: Colors.grey);
     }else if(_shouldShowLoading){
       return _loadingWidget;
     }else{
-      return defaultWidget;
+      return const SizedBox.shrink();
     }
   }
 
@@ -409,7 +409,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
           MainAxisAlignment.end : MainAxisAlignment.start,
           children: [
             if(widget.isReverse)
-              _buildGridExtraItemSuchNoMoreDataOrLoading(),
+              _buildGridExtraItemSuchNoMoreDataOrLoading,
             GridView.count(
               shrinkWrap: widget.shrinkWrap!,
               crossAxisCount: widget.crossAxisCount?? 2,
@@ -424,7 +424,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
               ),
             ),
             if(!widget.isReverse)
-              _buildGridExtraItemSuchNoMoreDataOrLoading(),
+              _buildGridExtraItemSuchNoMoreDataOrLoading,
           ],
         ),
       ),
