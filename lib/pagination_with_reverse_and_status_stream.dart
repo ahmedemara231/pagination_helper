@@ -331,13 +331,13 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
   bool get _shouldShowLoading => _hasMoreData && status._status.isLoading;
   bool get _shouldShowNoData => widget.showNoDataAlert && !_hasMoreData;
 
-  Widget _buildGridExtraItemSuchNoMoreDataOrLoading({Widget defaultWidget = const SizedBox.shrink()}){
+  Widget _buildGridExtraItemSuchNoMoreDataOrLoading({Widget? defaultWidget}){
     if(_shouldShowNoData){
       return const AppText('No more data', textAlign: TextAlign.center, color: Colors.grey);
     }else if(_shouldShowLoading){
       return _loadingWidget;
     }else{
-      return defaultWidget;
+      return defaultWidget?? const SizedBox.shrink();
     }
   }
 
