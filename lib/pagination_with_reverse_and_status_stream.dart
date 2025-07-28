@@ -345,14 +345,8 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     if (index < value.length) {
       return widget.itemBuilder(value, index, value[index]);
     } else {
-      // return _buildGridExtraItemSuchNoMoreDataOrLoading(defaultWidget: widget.itemBuilder(value, index, value[index]));
-      if(_shouldShowNoData){
-        return const AppText('No more data', textAlign: TextAlign.center, color: Colors.grey);
-      }else if(_shouldShowLoading){
-        return _loadingWidget;
-      }else{
-          return widget.itemBuilder(value, index, value[index]);
-      }
+      return _buildGridExtraItemSuchNoMoreDataOrLoading(defaultWidget: widget.itemBuilder(value, index, value[index]));
+
       // if(_shouldShowNoData){
       //   return const AppText('No more data', textAlign: TextAlign.center, color: Colors.grey);
       // }else if(_shouldShowLoading){
