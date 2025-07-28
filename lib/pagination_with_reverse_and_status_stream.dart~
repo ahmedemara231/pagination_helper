@@ -347,8 +347,6 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
   }
 
   Widget _buildItemBuilderWhenReverse({required int index, required List<Model> value}) {
-
-
     if (index == 0 && (_shouldShowLoading || _shouldShowNoData)) {
       if (_shouldShowLoading) {
         return Center(child: _loadingWidget);

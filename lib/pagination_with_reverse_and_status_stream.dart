@@ -409,7 +409,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              if(widget.isReverse && status._status.isLoading && _hasMoreData)
+              if(widget.isReverse)
                 _buildGridExtraItemSuchNoMoreDataOrLoading,
               GridView.count(
                 shrinkWrap: true,
@@ -425,7 +425,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
                       (index) => widget.itemBuilder(value, index, value[index]),
                 ),
               ),
-              if(!widget.isReverse && status._status.isLoading && _hasMoreData)
+              if(!widget.isReverse)
                 _buildGridExtraItemSuchNoMoreDataOrLoading,
             ],
           ),
