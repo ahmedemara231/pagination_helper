@@ -5,54 +5,27 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'package:dio/dio.dart';
 import 'package:easy_pagination/helpers/add_frame.dart';
+import 'package:easy_pagination/helpers/controller.dart';
+import 'package:easy_pagination/widgets/pagination_helper_refresh_indicator.dart';
 import 'package:easy_pagination/widgets/text.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../../generated/assets.dart';
+import 'helpers/data_and_pagination_data.dart';
+import 'helpers/errors.dart';
 import 'helpers/message_utils.dart';
+import 'helpers/scroll_controller.dart';
+import 'helpers/status_stream.dart';
 
 
 enum RankingType {gridView, listView}
-enum AsyncCallStatus {
-  initial,
-  loading,
-  success,
-  error,
-  networkError,
-}
 
-extension AsyncCallStatusExtension on AsyncCallStatus {
-  bool get isLoading => this == AsyncCallStatus.loading;
-  bool get isError => this == AsyncCallStatus.error;
-  bool get isNetworkError => this == AsyncCallStatus.networkError;
-  bool get isSuccess => this == AsyncCallStatus.success;
-}
-
-class AsyncCallStatusInterceptor{
-  AsyncCallStatus _status;
-  AsyncCallStatusInterceptor(this._status);
-
-  final StreamController<AsyncCallStatus> _controller = StreamController<AsyncCallStatus>();
-  void updateStatus(AsyncCallStatus status){
-    _status = status;
-    _controller.add(status);
-  }
-
-  Stream<AsyncCallStatus> get stream => _controller.stream;
-  Stream<AsyncCallStatus> get listenStatusChanges{
-    return stream;
-  }
-
-  void dispose(){
-    _controller.close();
-  }
-}
 
 // Response is full response which includes data list and pagination data
 // Model is specific model is the list
 class EasyPagination<Response, Model> extends StatefulWidget {
-  final FutureOr<void> Function(AsyncCallStatus)? onUpdateStatus;
+  final FutureOr<void> Function(AsyncCallStatus status)? onUpdateStatus;
   final bool isReverse;
   final bool showNoDataAlert;
   final RankingType rankingType;
@@ -187,24 +160,6 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     }
   }
 
-  Future<void> _startScrolling() async{
-    switch(widget.isReverse){
-      case true:
-        if (_scrollController.position.pixels ==
-            _scrollController.position.minScrollExtent &&
-            !status._status.isLoading &&
-            currentPage <= totalPages){
-          await _fetchDataWhenScrollUp();
-        }
-      default:
-        if (_scrollController.position.pixels ==
-            _scrollController.position.maxScrollExtent &&
-            !status._status.isLoading &&
-            currentPage <= totalPages) {
-          await _fetchDataWhenScrollDown();
-        }
-    }
-  }
 
   Future<void> _onScroll({bool isRefresh = false}) async{
     try {
@@ -218,25 +173,23 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     }
   }
 
-  Future<void> _fetchData(void Function(List<Model> items) onUpdate)async{
-    setState(() => status.updateStatus(AsyncCallStatus.loading));
-    _scrollController.retainOffset();
-    final mapperResult = await _manageMapper();
-    if(currentPage <= mapperResult.paginationData.totalPages.toInt()){
-      setState(() {
-        currentPage++;
-        status.updateStatus(AsyncCallStatus.success);
-      });
+  Future<void> _startScrolling() async{
+    switch(widget.isReverse){
+      case true:
+        if (_scrollController.position.pixels ==
+            _scrollController.position.minScrollExtent &&
+            !status.currentState.isLoading &&
+            currentPage <= totalPages){
+          await _fetchDataWhenScrollUp();
+        }
+      default:
+        if (_scrollController.position.pixels ==
+            _scrollController.position.maxScrollExtent &&
+            !status.currentState.isLoading &&
+            currentPage <= totalPages) {
+          await _fetchDataWhenScrollDown();
+        }
     }
-    onUpdate(mapperResult.data);
-    if(widget.onSuccess != null){
-      widget.onSuccess!(currentPage, widget.controller._items.value);
-    }
-    _scrollController.restoreOffset(
-        isReverse: widget.isReverse,
-        subList: mapperResult.data,
-        totalCurrentItems: widget.controller._items.value.length
-    );
   }
 
   Future<void> _fetchDataWhenScrollUp() async{
@@ -251,42 +204,25 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     );
   }
 
-  void _scrollDownWhileGetDataFirstTimeWhenReverse(){
-    _scrollController.jumpTo(
-      _scrollController.position.maxScrollExtent,
-    );
-  }
-
-  Future<void> _fetchDataFirstTimeOrRefresh() async {
-    if(currentPage > 1 && widget.controller._items.value.isNotEmpty){
-      _resetDataWhenRefresh();
-    }
+  Future<void> _fetchData(void Function(List<Model> items) onUpdate)async{
     setState(() => status.updateStatus(AsyncCallStatus.loading));
     _scrollController.retainOffset();
-    try {
-      final mapperResult = await _manageMapper();
-      if(currentPage <= mapperResult.paginationData.totalPages.toInt()){
-        setState(() {
-          currentPage++;
-          status.updateStatus(AsyncCallStatus.success);
-        });
-      }
-      widget.controller.updateItems(newItems: mapperResult.data);
-      widget.controller._initScrollController(_scrollController);
-      if(widget.onSuccess != null){
-        widget.onSuccess!(currentPage, widget.controller._items.value);
-      }
-      if(widget.isReverse){
-        Frame.addBefore(() => _scrollDownWhileGetDataFirstTimeWhenReverse());
-      }
-    } on Exception catch(e){
-      _errorHandler(e);
+    final mapperResult = await _manageMapper();
+    if(currentPage <= mapperResult.paginationData.totalPages.toInt()){
+      setState(() {
+        currentPage++;
+        status.updateStatus(AsyncCallStatus.success);
+      });
     }
-  }
-
-  void _resetDataWhenRefresh() {
-    currentPage = 1;
-    widget.controller._items.value.clear();
+    onUpdate(mapperResult.data);
+    if(widget.onSuccess != null){
+      widget.onSuccess!(currentPage, widget.controller.items.value);
+    }
+    _scrollController.restoreOffset(
+        isReverse: widget.isReverse,
+        subList: mapperResult.data,
+        totalCurrentItems: widget.controller.items.value.length
+    );
   }
 
   Future<DataListAndPaginationData<Model>> _manageMapper()async{
@@ -297,6 +233,8 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     _manageTotalPagesNumber(mapperResult.paginationData.totalPages);
     return mapperResult;
   }
+
+  void _manageTotalPagesNumber(int totalPagesNumber) => totalPages = totalPagesNumber;
 
   Future<Response> _callApi(Future<Response> Function(int currentPage) asyncCall)async{
     final connectivityResult = await Connectivity().checkConnectivity();
@@ -310,7 +248,44 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     }
   }
 
-  void _manageTotalPagesNumber(int totalPagesNumber) => totalPages = totalPagesNumber;
+  Future<void> _fetchDataFirstTimeOrRefresh() async {
+    if(currentPage > 1 && widget.controller.items.value.isNotEmpty){
+      _resetDataWhenRefresh();
+    }
+    setState(() => status.updateStatus(AsyncCallStatus.loading));
+    _scrollController.retainOffset();
+    try {
+      final mapperResult = await _manageMapper();
+      if(currentPage <= mapperResult.paginationData.totalPages.toInt()){
+        setState(() {
+          currentPage++;
+          status.updateStatus(AsyncCallStatus.success);
+        });
+      }
+      widget.controller.updateItems(newItems: mapperResult.data);
+      widget.controller.initScrollController(_scrollController);
+      if(widget.onSuccess != null){
+        widget.onSuccess!(currentPage, widget.controller.items.value);
+      }
+      if(widget.isReverse){
+        Frame.addBefore(() => _scrollDownWhileGetDataFirstTimeWhenReverse());
+      }
+    } on Exception catch(e){
+      _errorHandler(e);
+    }
+  }
+
+  void _scrollDownWhileGetDataFirstTimeWhenReverse(){
+    _scrollController.jumpTo(
+      _scrollController.position.maxScrollExtent,
+    );
+  }
+
+  void _resetDataWhenRefresh() {
+    currentPage = 1;
+    widget.controller.items.value.clear();
+  }
+
 
   Widget _listRanking(){
     if(widget.rankingType == RankingType.gridView){
@@ -319,9 +294,8 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     return _listView();
   }
 
-
   bool get _hasMoreData => currentPage <= totalPages;
-  bool get _shouldShowLoading => _hasMoreData && status._status.isLoading;
+  bool get _shouldShowLoading => _hasMoreData && status.currentState.isLoading;
   bool get _shouldShowNoData => widget.showNoDataAlert && !_hasMoreData;
   final Widget _noMoreDataText = const AppText('No more data', textAlign: TextAlign.center, color: Colors.grey);
 
@@ -364,7 +338,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
 
   Widget _listView() {
     return ValueListenableBuilder(
-      valueListenable: widget.controller._items,
+      valueListenable: widget.controller.items,
       builder: (context, value, child) => Align(
         alignment: widget.isReverse? Alignment.bottomCenter : Alignment.topCenter,
         child: ListView.builder(
@@ -382,7 +356,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
 
   Widget _gridView() {
     return ValueListenableBuilder(
-      valueListenable: widget.controller._items,
+      valueListenable: widget.controller.items,
       builder: (context, value, child) => SingleChildScrollView(
         controller: _scrollController,
         child: Column(
@@ -414,7 +388,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
   }
 
   Widget get _buildLoadingView{
-    if(widget.controller._items.value.isEmpty){
+    if(widget.controller.items.value.isEmpty){
       return _loadingWidget;
     }else{
       return _listRanking();
@@ -434,15 +408,15 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
   }
 
   Widget get _buildErrorWidget{
-    if(widget.controller._items.value.isNotEmpty){
-      if(status._status.isNetworkError){
+    if(widget.controller.items.value.isNotEmpty){
+      if(status.currentState.isNetworkError){
         MessageUtils. showSimpleToast(msg: widget.noConnectionText?? 'Check your internet connection', color: Colors.red);
       }else{
         MessageUtils.showSimpleToast(msg: errorMsg, color: Colors.red);
       }
       return _listRanking();
     }else{
-      if(status._status.isNetworkError){
+      if(status.currentState.isNetworkError){
         return Column(
           children: [
             // Lottie.asset(Assets.lottieNoInternet),
@@ -474,7 +448,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
 
 
   Widget get _buildSuccessWidget{
-    if(widget.controller._items.value.isNotEmpty){
+    if(widget.controller.items.value.isNotEmpty){
       return _listRanking();
     }else{
       return Column(
@@ -504,265 +478,12 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     return PaginationHelperRefreshIndicator(
       onRefresh: _manageRefreshIndicator,
       child: ValueListenableBuilder(
-        valueListenable: widget.controller._needToRefresh,
+        valueListenable: widget.controller.needToRefresh,
         builder: (context, value, child) =>
-        status._status.isError || status._status.isNetworkError?
-        _buildErrorWidget : status._status.isLoading?
+        status.currentState.isError || status.currentState.isNetworkError?
+        _buildErrorWidget : status.currentState.isLoading?
         _buildLoadingView : _buildSuccessWidget,
       ),
-    );
-  }
-}
-
-class ErrorMapper{
-  String Function(DioException e)? errorWhenDio;
-  String Function(HttpException e)? errorWhenHttp;
-
-  ErrorMapper({this.errorWhenDio, this.errorWhenHttp});
-}
-
-class RetainableScrollController extends ScrollController {
-  RetainableScrollController({
-    super.initialScrollOffset,
-    super.keepScrollOffset,
-    super.debugLabel,
-  });
-
-  double? _currentOffset;
-
-  void retainOffset() { // before request
-    if (hasClients) {
-      _currentOffset = offset; // position.pixels
-    }
-  }
-
-
-  void restoreOffset({
-    required bool isReverse,
-    required List subList,
-    required int totalCurrentItems
-  }) { // after request
-    if (_currentOffset != null && hasClients) {
-      jumpTo(
-          isReverse?
-          _getSubListHeight(subList, totalCurrentItems) :
-          _currentOffset!
-      );
-    }
-  }
-
-  double _getSubListHeight(List subList, int totalCurrentItems) {
-    if (!hasClients || totalCurrentItems == 0) {
-      // Fallback to estimated height per item
-      return subList.length * 60.0; // Adjust based on your item design
-    }
-
-    // Calculate average item height from current list
-    double totalContentHeight = position.maxScrollExtent +
-        position.viewportDimension;
-    double averageItemHeight = totalContentHeight / totalCurrentItems;
-
-    return subList.length * averageItemHeight;
-  }
-}
-
-class DataListAndPaginationData<E>{
-  List<E> data;
-  PaginationData paginationData;
-
-  DataListAndPaginationData({
-    required this.data,
-    required this.paginationData,
-  });
-}
-
-class PaginationData{
-  final int perPage;
-  final int totalPages;
-  // final String? nextPageUrl;
-
-  PaginationData({
-    required this.perPage,
-    required this.totalPages,
-    // this.nextPageUrl,
-  });
-}
-
-class EasyPaginationError implements Exception{
-  final String msg;
-  EasyPaginationError(this.msg);
-}
-
-class PaginationNetworkError extends EasyPaginationError{
-  PaginationNetworkError(super.msg);
-}
-
-class EasyPaginationController<E> {
-  final ValueNotifier<List<E>> _items = ValueNotifier<List<E>>([]);
-  final ValueNotifier<bool> _needToRefresh = ValueNotifier<bool>(false);
-
-  RetainableScrollController? _scrollController;
-  void _initScrollController(RetainableScrollController controller){
-    _scrollController ??= controller;
-  }
-
-  Future<void> moveToMaxBottom({
-    Duration? duration,
-    Curve? curve
-  })async{
-    Frame.addBefore(() async => await _scrollController!.animateTo(
-        _scrollController!.position.maxScrollExtent,
-        duration: duration?? const Duration(milliseconds: 300),
-        curve: curve?? Curves.easeOutQuad
-    ));
-  }
-
-  Future<void> moveToMaxTop({
-    Duration? duration,
-    Curve? curve
-  })async{
-    Frame.addBefore(() async => await _scrollController!.animateTo(
-        _scrollController!.position.minScrollExtent,
-        duration: duration?? const Duration(milliseconds: 400),
-        curve: curve?? Curves.easeOutQuad
-    ));
-  }
-
-  void _notify(){
-    _items.notifyListeners();
-  }
-
-  void updateItems({
-    required List<E> newItems,
-    bool isReverse = false
-  }) {
-    switch(isReverse){
-      case true:
-        _items.value.insertAll(0, newItems);
-        break;
-      case false:
-        _items.value.addAll(newItems);
-        break;
-    }
-    _notify();
-  }
-
-  E? getRandomItem() {
-    if (_items.value.isEmpty) return null;
-    final random = math.Random();
-    return _items.value[random.nextInt(_items.value.length)];
-  }
-
-  List<E> filter(bool Function(E item) condition) {
-    return _items.value.where(condition).toList();
-  }
-
-  void filterAndUpdate(bool Function(E item) condition) {
-    _items.value = List.from(filter(condition));
-    _notify();
-  }
-
-
-  void sort(int Function(E a, E b) compare) {
-    _items.value.sort(compare);
-    _notify();
-  }
-
-  void _executeWholeRefresh(){
-    _needToRefresh.value = !_needToRefresh.value;
-  }
-
-  void _checkAndNotify(){
-    if(_items.value.length == 1){
-      _executeWholeRefresh();
-    }else{
-      _notify();
-    }
-  }
-
-  void addItem(E item) {
-    _items.value.add(item);
-    _checkAndNotify();
-  }
-
-  void addItemAt(int index, E item) {
-    _items.value.insert(index, item);
-    _checkAndNotify();
-  }
-
-  void addAtBeginning(E item) {
-    _items.value.insert(0, item);
-    _checkAndNotify();
-  }
-
-  E? accessElement(int index) {
-    return _items.value.elementAtOrNull(index);
-  }
-
-  void replaceWith(int oldItemIndex, E item) {
-    _items.value[oldItemIndex] = item;
-    _notify();
-  }
-
-  void refresh(){
-    _notify();
-  }
-
-  void _checkAndNotifyAfterRemoving(){
-    if(_items.value.isEmpty){
-      _executeWholeRefresh();
-    }else{
-      _notify();
-    }
-  }
-
-  void removeItem(E item) {
-    _items.value.remove(item);
-    _checkAndNotifyAfterRemoving();
-  }
-
-  void removeAt(int index){
-    _items.value.removeAt(index);
-    _checkAndNotifyAfterRemoving();
-  }
-
-  void removeWhere(bool Function(E item) condition){
-    _items.value.removeWhere(condition);
-    _checkAndNotifyAfterRemoving();
-  }
-
-  void clear() {
-    _items.value.clear();
-    _notify();
-  }
-
-  void dispose() {
-    _items.dispose();
-  }
-}
-
-
-class PaginationHelperRefreshIndicator extends StatelessWidget {
-
-  final Future<void> Function() onRefresh;
-  final Widget child;
-  final Color? refreshIndicatorBackgroundColor;
-  final Color? refreshIndicatorColor;
-  const PaginationHelperRefreshIndicator({super.key,
-    required this.onRefresh,
-    this.refreshIndicatorBackgroundColor,
-    this.refreshIndicatorColor,
-    required this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return RefreshIndicator.adaptive(
-        backgroundColor: refreshIndicatorBackgroundColor,
-        color: refreshIndicatorColor,
-        triggerMode: RefreshIndicatorTriggerMode.anywhere,
-        onRefresh: onRefresh,
-        child: child
     );
   }
 }

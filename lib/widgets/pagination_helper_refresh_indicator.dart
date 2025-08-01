@@ -15,7 +15,7 @@ class PaginationHelperRefreshIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RefreshIndicator(
+    return RefreshIndicator.adaptive(
         backgroundColor: refreshIndicatorBackgroundColor,
         color: refreshIndicatorColor,
         triggerMode: RefreshIndicatorTriggerMode.anywhere,

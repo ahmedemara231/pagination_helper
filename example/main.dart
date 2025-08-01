@@ -1,3 +1,6 @@
+import 'package:easy_pagination/helpers/controller.dart';
+import 'package:easy_pagination/helpers/data_and_pagination_data.dart';
+import 'package:easy_pagination/helpers/errors.dart';
 import 'package:easy_pagination/pagination_with_reverse_and_status_stream.dart';
 import 'package:flutter/material.dart';
 
