@@ -12,6 +12,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../../generated/assets.dart';
 import 'helpers/message_utils.dart';
 
+
 enum RankingType {gridView, listView}
 enum AsyncCallStatus {
   initial,
@@ -134,7 +135,6 @@ class EasyPagination<Response, Model> extends StatefulWidget {
 class _EasyPaginationState<Response, Model> extends State<EasyPagination<Response, Model>> {
   late RetainableScrollController _scrollController;
   AsyncCallStatusInterceptor status = AsyncCallStatusInterceptor(AsyncCallStatus.initial);
-  // AsyncCallStatus status = AsyncCallStatus.initial;
   int currentPage = 1;
   late int totalPages;
 
@@ -156,6 +156,37 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     super.dispose();
   }
 
+  String errorMsg = '';
+  void _logError(Exception e){
+    if(e is DioException){
+      String prettyJson = const JsonEncoder.withIndent('  ').convert(e.response?.data);
+      dev.log('error : $prettyJson');
+    }else if(e is HttpException){
+      String prettyJson = const JsonEncoder.withIndent('  ').convert(e.message);
+      dev.log('error : $prettyJson');
+    }
+  }
+
+  FutureOr<void> _errorHandler(Exception e){
+    dev.log('enter error handler');
+    _logError(e);
+    widget.onError?.call(currentPage, errorMsg);
+    setState(() => status.updateStatus(AsyncCallStatus.error));
+
+    if(e is PaginationNetworkError){
+      setState(() => status.updateStatus(AsyncCallStatus.networkError));
+
+    }else if(e is DioException){
+      errorMsg = widget.errorMapper.errorWhenDio?.call(e)?? '';
+
+    }else if(e is HttpException){
+      errorMsg = widget.errorMapper.errorWhenHttp?.call(e)?? '';
+
+    }else{
+      errorMsg = 'There is error occur $e';
+    }
+  }
+
   Future<void> _startScrolling() async{
     switch(widget.isReverse){
       case true:
@@ -163,7 +194,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
             _scrollController.position.minScrollExtent &&
             !status._status.isLoading &&
             currentPage <= totalPages){
-          _fetchDataWhenScrollUp();
+          await _fetchDataWhenScrollUp();
         }
       default:
         if (_scrollController.position.pixels ==
@@ -182,22 +213,8 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
       }else{
         await _startScrolling();
       }
-    } on PaginationNetworkError{
-      setState(() => status.updateStatus(AsyncCallStatus.networkError));
-    }on Exception catch(e){
-      if(e is DioException){
-        errorMsg = widget.errorMapper.errorWhenDio!(e);
-      }else if(e is HttpException){
-        errorMsg = widget.errorMapper.errorWhenHttp!(e);
-      }else{
-        errorMsg = 'There is error occur $e';
-      }
-
-      _logError(e);
-      if(widget.onError != null){
-        widget.onError!(currentPage, errorMsg);
-      }
-      setState(() => status.updateStatus(AsyncCallStatus.error));
+    } on Exception catch(e){
+      _errorHandler(e);
     }
   }
 
@@ -234,17 +251,6 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     );
   }
 
-  String errorMsg = '';
-  void _logError(Exception e){
-    if(e is DioException){
-      String prettyJson = const JsonEncoder.withIndent('  ').convert(e.response?.data);
-      dev.log('error : $prettyJson');
-    }else if(e is HttpException){
-      String prettyJson = const JsonEncoder.withIndent('  ').convert(e.message);
-      dev.log('error : $prettyJson');
-    }
-  }
-
   void _scrollDownWhileGetDataFirstTimeWhenReverse(){
     _scrollController.jumpTo(
       _scrollController.position.maxScrollExtent,
@@ -273,22 +279,8 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
       if(widget.isReverse){
         Frame.addBefore(() => _scrollDownWhileGetDataFirstTimeWhenReverse());
       }
-    } on PaginationNetworkError{
-      setState(() => status.updateStatus(AsyncCallStatus.networkError));
-    }on Exception catch(e){
-      if(e is DioException){
-        errorMsg = widget.errorMapper.errorWhenDio!(e);
-      }else if(e is HttpException){
-        errorMsg = widget.errorMapper.errorWhenHttp!(e);
-      }else{
-        errorMsg = 'There is error occur $e';
-      }
-
-      _logError(e);
-      if(widget.onError != null){
-        widget.onError!(currentPage, errorMsg);
-      }
-      setState(() => status.updateStatus(AsyncCallStatus.error));
+    } on Exception catch(e){
+      _errorHandler(e);
     }
   }
 
@@ -311,6 +303,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     switch(connectivityResult){
       case ConnectivityResult.none:
         throw PaginationNetworkError(widget.noConnectionText?? 'Check your internet connection');
+
       default:
         final Response result = await asyncCall(currentPage);
         return result;
@@ -452,7 +445,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
       if(status._status.isNetworkError){
         return Column(
           children: [
-            Lottie.asset(Assets.lottieNoInternet),
+            // Lottie.asset(Assets.lottieNoInternet),
             const SizedBox(height: 10),
             Text(
                 widget.noConnectionText?? 'Check your internet connection',
@@ -465,7 +458,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
         case null:
           return Column(
             children: [
-              Lottie.asset(Assets.lottieApiError),
+              // Lottie.asset(Assets.lottieApiError),
               const SizedBox(height: 10),
               Text(
                   errorMsg,
@@ -486,7 +479,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     }else{
       return Column(
         children: [
-          Lottie.asset(Assets.lottieNoData),
+          // Lottie.asset(Assets.lottieNoData),
           const SizedBox(height: 10),
           Text(widget.emptyListText?? 'There is no data right now!')
         ],
@@ -501,6 +494,8 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
       }else{
         await _onScroll(isRefresh: true);
       }
+    }else{
+      await _onScroll(isRefresh: true);
     }
   }
 
