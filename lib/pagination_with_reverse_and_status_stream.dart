@@ -330,12 +330,15 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
   bool get _hasMoreData => currentPage <= totalPages;
   bool get _shouldShowLoading => _hasMoreData && status._status.isLoading;
   bool get _shouldShowNoData => widget.showNoDataAlert && !_hasMoreData;
+  final Widget _noMoreDataText = const AppText('No more data', textAlign: TextAlign.center, color: Colors.grey);
 
   Widget _buildGridExtraItemSuchNoMoreDataOrLoading({Widget? defaultWidget}){
     if(_shouldShowNoData){
-      return const AppText('No more data', textAlign: TextAlign.center, color: Colors.grey);
+      return _noMoreDataText;
+
     }else if(_shouldShowLoading){
       return _loadingWidget;
+
     }else{
       return defaultWidget?? const SizedBox.shrink();
     }
@@ -345,30 +348,13 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     if (index < value.length) {
       return widget.itemBuilder(value, index, value[index]);
     } else {
-      return _buildGridExtraItemSuchNoMoreDataOrLoading(defaultWidget: widget.itemBuilder(value, index, value[index]));
-
-      // if(_shouldShowNoData){
-      //   return const AppText('No more data', textAlign: TextAlign.center, color: Colors.grey);
-      // }else if(_shouldShowLoading){
-      //   return _loadingWidget;
-      // }else{
-      //   return widget.itemBuilder(value, index, value[index]);
-      // }
+      return _buildGridExtraItemSuchNoMoreDataOrLoading();
     }
   }
 
   Widget _buildItemBuilderWhenReverse({required int index, required List<Model> value}) {
     if (index == 0 && (_shouldShowLoading || _shouldShowNoData)) {
       return _buildGridExtraItemSuchNoMoreDataOrLoading();
-      // if (_shouldShowLoading) {
-      //   return Center(child: _loadingWidget);
-      // } else {
-      //   return const AppText(
-      //       'No more data',
-      //       textAlign: TextAlign.center,
-      //       color: Colors.grey
-      //   );
-      // }
     }
 
     int dataIndex = (_shouldShowLoading || _shouldShowNoData) ? index - 1 : index;
@@ -434,29 +420,6 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     );
   }
 
-  // Widget _gridView() {
-  //   return ValueListenableBuilder(
-  //     valueListenable: widget.controller._items,
-  //     builder: (context, value, child) => Align(
-  //       alignment: widget.isReverse? Alignment.bottomCenter : Alignment.topCenter,
-  //       child: GridView.count(
-  //         shrinkWrap: widget.shrinkWrap?? false,
-  //         crossAxisCount: widget.crossAxisCount?? 2,
-  //         mainAxisSpacing: widget.mainAxisSpacing?? 0.0,
-  //         crossAxisSpacing: widget.crossAxisSpacing?? 0.0,
-  //         childAspectRatio: widget.childAspectRatio?? 1,
-  //         scrollDirection: widget.scrollDirection?? Axis.vertical,
-  //         controller: scrollController,
-  //         children: List.generate(
-  //           _buildItemCount(value), (index) => widget.isReverse?
-  //         _buildItemBuilderWhenReverse(index: index, value: value) :
-  //         _buildItemBuilder(index: index, value: value),
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
-
   Widget get _buildLoadingView{
     if(widget.controller._items.value.isEmpty){
       return _loadingWidget;
@@ -480,7 +443,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
   Widget get _buildErrorWidget{
     if(widget.controller._items.value.isNotEmpty){
       if(status._status.isNetworkError){
-        MessageUtils.showSimpleToast(msg: widget.noConnectionText?? 'Check your internet connection', color: Colors.red);
+        MessageUtils. showSimpleToast(msg: widget.noConnectionText?? 'Check your internet connection', color: Colors.red);
       }else{
         MessageUtils.showSimpleToast(msg: errorMsg, color: Colors.red);
       }
@@ -653,7 +616,7 @@ class EasyPaginationController<E> {
     Curve? curve
   })async{
     Frame.addBefore(() async => await _scrollController!.animateTo(
-    _scrollController!.position.maxScrollExtent,
+        _scrollController!.position.maxScrollExtent,
         duration: duration?? const Duration(milliseconds: 300),
         curve: curve?? Curves.easeOutQuad
     ));
@@ -664,7 +627,7 @@ class EasyPaginationController<E> {
     Curve? curve
   })async{
     Frame.addBefore(() async => await _scrollController!.animateTo(
-    _scrollController!.position.minScrollExtent,
+        _scrollController!.position.minScrollExtent,
         duration: duration?? const Duration(milliseconds: 400),
         curve: curve?? Curves.easeOutQuad
     ));
