@@ -2,25 +2,20 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as dev;
 import 'dart:io';
-import 'dart:math' as math;
 import 'package:dio/dio.dart';
 import 'package:easy_pagination/helpers/add_frame.dart';
 import 'package:easy_pagination/helpers/controller.dart';
 import 'package:easy_pagination/widgets/pagination_helper_refresh_indicator.dart';
 import 'package:easy_pagination/widgets/text.dart';
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import '../../../generated/assets.dart';
 import 'helpers/data_and_pagination_data.dart';
 import 'helpers/errors.dart';
 import 'helpers/message_utils.dart';
 import 'helpers/scroll_controller.dart';
 import 'helpers/status_stream.dart';
 
-
 enum RankingType {gridView, listView}
-
 
 // Response is full response which includes data list and pagination data
 // Model is specific model is the list
@@ -238,13 +233,12 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
 
   Future<Response> _callApi(Future<Response> Function(int currentPage) asyncCall)async{
     final connectivityResult = await Connectivity().checkConnectivity();
-    switch(connectivityResult){
-      case ConnectivityResult.none:
-        throw PaginationNetworkError(widget.noConnectionText?? 'Check your internet connection');
+    if(connectivityResult.contains(ConnectivityResult.none)){
+      throw PaginationNetworkError(widget.noConnectionText?? 'Check your internet connection');
 
-      default:
-        final Response result = await asyncCall(currentPage);
-        return result;
+    }else{
+      final Response result = await asyncCall(currentPage);
+      return result;
     }
   }
 
