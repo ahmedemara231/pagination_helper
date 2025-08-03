@@ -35,7 +35,9 @@ class EasyPaginationController<E> {
   }
 
   void _notify(){
-    items.notifyListeners();
+    final List<E> list = List.from(items.value);
+    items.value = list;
+    // items.notifyListeners();
   }
 
   void updateItems({
