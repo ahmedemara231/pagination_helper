@@ -3,12 +3,13 @@ import 'dart:convert';
 import 'dart:developer' as dev;
 import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:easy_pagination/helpers/add_frame.dart';
-import 'package:easy_pagination/helpers/controller.dart';
-import 'package:easy_pagination/widgets/pagination_helper_refresh_indicator.dart';
 import 'package:easy_pagination/widgets/text.dart';
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:lottie/lottie.dart';
+import 'generated/assets.dart';
+import 'helpers/add_frame.dart';
+import 'helpers/controller.dart';
 import 'helpers/data_and_pagination_data.dart';
 import 'helpers/errors.dart';
 import 'helpers/message_utils.dart';
@@ -27,8 +28,9 @@ class EasyPagination<Response, Model> extends StatefulWidget {
   final Color? refreshIndicatorBackgroundColor;
   final Color? refreshIndicatorColor;
   final ErrorMapper errorMapper;
-  final Function(int currentPage, List<Model> data)? onSuccess;
-  final Function(int currentPage, String errorMessage)? onError;
+  final FutureOr<void> Function()? onLoading;
+  final FutureOr<void> Function(int currentPage, List<Model> data)? onSuccess;
+  final FutureOr<void> Function(int currentPage, String errorMessage)? onError;
   final Future<Response> Function(int currentPage) asyncCall;
   final DataListAndPaginationData<Model> Function(Response response) mapper;
   final Widget Function(List<Model> data, int index, Model element) itemBuilder;
@@ -52,6 +54,7 @@ class EasyPagination<Response, Model> extends StatefulWidget {
     required this.itemBuilder,
     this.onUpdateStatus,
     this.isReverse = false,
+    this.onLoading,
     this.onSuccess,
     this.onError,
     this.showNoDataAlert = false,
@@ -77,6 +80,7 @@ class EasyPagination<Response, Model> extends StatefulWidget {
     required this.itemBuilder,
     this.onUpdateStatus,
     this.isReverse = false,
+    this.onLoading,
     this.onSuccess,
     this.onError,
     this.showNoDataAlert = false,
@@ -156,13 +160,23 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
   }
 
 
-  Future<void> _onScroll({bool isRefresh = false}) async{
+  // Future<void> _onScroll({bool isRefresh = false}) async{
+  //   try {
+  //     if(isRefresh){
+  //       await _fetchDataFirstTimeOrRefresh();
+  //     }else{
+  //       await _startScrolling();
+  //     }
+  //   } on Exception catch(e){
+  //     dev.log('_fetchDataFirstTimeOrRefresh error handling');
+  //     _errorHandler(e);
+  //   }
+  // }
+
+
+  Future<void> _onScroll() async{
     try {
-      if(isRefresh){
-        await _fetchDataFirstTimeOrRefresh();
-      }else{
-        await _startScrolling();
-      }
+      await _startScrolling();
     } on Exception catch(e){
       _errorHandler(e);
     }
@@ -188,19 +202,39 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
   }
 
   Future<void> _fetchDataWhenScrollUp() async{
-    await _fetchData((items) =>
+    await _fetchDataWhileScrolling((items) =>
         widget.controller.updateItems(newItems: items, isReverse: true)
     );
   }
 
   Future<void> _fetchDataWhenScrollDown() async{
-    await _fetchData((items) =>
+    await _fetchDataWhileScrolling((items) =>
         widget.controller.updateItems(newItems: items, isReverse: false)
     );
   }
 
-  Future<void> _fetchData(void Function(List<Model> items) onUpdate)async{
+  Future<void> _fetchDataWhileScrolling(void Function(List<Model> items) onUpdate)async{
+    await _fetchDataAndMapping(
+        whenEnd: (mapperResult) async{
+          onUpdate(mapperResult.data);
+          await widget.onSuccess?.call(currentPage, widget.controller.items.value);
+          _scrollController.restoreOffset(
+              isReverse: widget.isReverse,
+              subList: mapperResult.data,
+              totalCurrentItems: widget.controller.items.value.length
+          );
+        }
+    );
+  }
+
+
+  Future<void> _fetchDataAndMapping({
+    FutureOr<void> Function()? whenStart,
+    FutureOr<void> Function(DataListAndPaginationData<Model> mapperResult)? whenEnd,
+  })async{
+    await whenStart?.call();
     setState(() => status.updateStatus(AsyncCallStatus.loading));
+    await widget.onLoading?.call();
     _scrollController.retainOffset();
     final mapperResult = await _manageMapper();
     if(currentPage <= mapperResult.paginationData.totalPages.toInt()){
@@ -209,15 +243,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
         status.updateStatus(AsyncCallStatus.success);
       });
     }
-    onUpdate(mapperResult.data);
-    if(widget.onSuccess != null){
-      widget.onSuccess!(currentPage, widget.controller.items.value);
-    }
-    _scrollController.restoreOffset(
-        isReverse: widget.isReverse,
-        subList: mapperResult.data,
-        totalCurrentItems: widget.controller.items.value.length
-    );
+    await whenEnd?.call(mapperResult);
   }
 
   Future<DataListAndPaginationData<Model>> _manageMapper()async{
@@ -243,27 +269,22 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
   }
 
   Future<void> _fetchDataFirstTimeOrRefresh() async {
-    if(currentPage > 1 && widget.controller.items.value.isNotEmpty){
-      _resetDataWhenRefresh();
-    }
-    setState(() => status.updateStatus(AsyncCallStatus.loading));
-    _scrollController.retainOffset();
     try {
-      final mapperResult = await _manageMapper();
-      if(currentPage <= mapperResult.paginationData.totalPages.toInt()){
-        setState(() {
-          currentPage++;
-          status.updateStatus(AsyncCallStatus.success);
-        });
-      }
-      widget.controller.updateItems(newItems: mapperResult.data);
-      widget.controller.initScrollController(_scrollController);
-      if(widget.onSuccess != null){
-        widget.onSuccess!(currentPage, widget.controller.items.value);
-      }
-      if(widget.isReverse){
-        Frame.addBefore(() => _scrollDownWhileGetDataFirstTimeWhenReverse());
-      }
+      await _fetchDataAndMapping(
+          whenStart: () {
+            if(currentPage > 1 && widget.controller.items.value.isNotEmpty){
+              _resetDataWhenRefresh();
+            }
+          },
+          whenEnd: (mapperResult) async{
+            widget.controller.updateItems(newItems: mapperResult.data);
+            widget.controller.initScrollController(_scrollController);
+            await widget.onSuccess?.call(currentPage, widget.controller.items.value);
+            if(widget.isReverse){
+              Frame.addBefore(() => _scrollDownWhileGetDataFirstTimeWhenReverse());
+            }
+          }
+      );
     } on Exception catch(e){
       _errorHandler(e);
     }
@@ -279,7 +300,6 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     currentPage = 1;
     widget.controller.items.value.clear();
   }
-
 
   Widget _listRanking(){
     if(widget.rankingType == RankingType.gridView){
@@ -394,7 +414,8 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
       case null:
         return Center(child: SizedBox.square(
             dimension: 30,
-            child: const CircularProgressIndicator())
+            child: const CircularProgressIndicator.adaptive()
+        )
         );
       default:
         return widget.loadingBuilder!;
@@ -426,7 +447,7 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
         case null:
           return Column(
             children: [
-              // Lottie.asset(Assets.lottieApiError),
+              Lottie.asset(Assets.lottieApiError),
               const SizedBox(height: 10),
               Text(
                   errorMsg,
@@ -455,29 +476,26 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     }
   }
 
-  Future<void> _manageRefreshIndicator()async{
-    if(widget.isReverse){
-      if(currentPage < totalPages){
-        Future(() => null);
-      }else{
-        await _onScroll(isRefresh: true);
-      }
-    }else{
-      await _onScroll(isRefresh: true);
-    }
-  }
+  // Future<void> _manageRefreshIndicator()async{
+  //   if(widget.isReverse){
+  //     if(currentPage < totalPages){
+  //       Future(() => null);
+  //     }else{
+  //       await _onScroll(isRefresh: true);
+  //     }
+  //   }else{
+  //     await _onScroll(isRefresh: true);
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
-    return PaginationHelperRefreshIndicator(
-      onRefresh: _manageRefreshIndicator,
-      child: ValueListenableBuilder(
-        valueListenable: widget.controller.needToRefresh,
-        builder: (context, value, child) =>
-        status.currentState.isError || status.currentState.isNetworkError?
-        _buildErrorWidget : status.currentState.isLoading?
-        _buildLoadingView : _buildSuccessWidget,
-      ),
+    return ValueListenableBuilder(
+      valueListenable: widget.controller.needToRefresh,
+      builder: (context, value, child) =>
+      status.currentState.isError || status.currentState.isNetworkError?
+      _buildErrorWidget : status.currentState.isLoading?
+      _buildLoadingView : _buildSuccessWidget,
     );
   }
 }
