@@ -335,9 +335,11 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
   }
 
   void _scrollDownWhileGetDataFirstTimeWhenReverse(){
-    _scrollController.jumpTo(
-      _scrollController.position.maxScrollExtent,
-    );
+    if(widget.controller._items.value.isNotEmpty){
+      _scrollController.jumpTo(
+        _scrollController.position.maxScrollExtent,
+      );
+    }
   }
 
   void _resetDataWhenRefresh() {
