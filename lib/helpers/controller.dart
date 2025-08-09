@@ -1,5 +1,5 @@
-import 'package:easy_pagination/helpers/scroll_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:pagify/helpers/scroll_controller.dart';
 import 'dart:math' as math;
 import 'add_frame.dart';
 

@@ -1,4 +1,4 @@
-name: easy_pagination
+name: pagify
 description: "A flexible and customizable Flutter package for handling paginated data with minimal setup."
 version: 0.0.3
 homepage: https://github.com/ahmedemara231/pagination_helper
@@ -15,6 +15,7 @@ dependencies:
   custom_refresh_indicator: ^4.0.1
   dio: ^5.8.0+1
   http: ^1.4.0
+  rename: ^3.1.0
 
   flutter:
     sdk: flutter

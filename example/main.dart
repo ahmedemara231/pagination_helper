@@ -1,8 +1,8 @@
-import 'package:easy_pagination/helpers/controller.dart';
-import 'package:easy_pagination/helpers/data_and_pagination_data.dart';
-import 'package:easy_pagination/helpers/errors.dart';
-import 'package:easy_pagination/pagination_with_reverse_and_status_stream.dart';
 import 'package:flutter/material.dart';
+import 'package:pagify/helpers/controller.dart';
+import 'package:pagify/helpers/data_and_pagination_data.dart';
+import 'package:pagify/helpers/errors.dart';
+import 'package:pagify/pagination_with_reverse_and_status_stream.dart';
 
 void main() {
   runApp(const EasyPaginationExample());
