@@ -31,6 +31,7 @@ class _PagifyExampleState extends State<PagifyExample> {
     return ExampleModel(items: items, totalPages: 4);
   }
 
+  //
   late PagifyController<String> _PagifyController;
   @override
   void initState() {
