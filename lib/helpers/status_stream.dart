@@ -1,6 +1,6 @@
 import 'dart:async';
 
-enum AsyncCallStatus {
+enum PagifyAsyncCallStatus {
   initial,
   loading,
   success,
@@ -8,26 +8,26 @@ enum AsyncCallStatus {
   networkError,
 }
 
-extension AsyncCallStatusExtension on AsyncCallStatus {
-  bool get isLoading => this == AsyncCallStatus.loading;
-  bool get isError => this == AsyncCallStatus.error;
-  bool get isNetworkError => this == AsyncCallStatus.networkError;
-  bool get isSuccess => this == AsyncCallStatus.success;
+extension AsyncCallStatusExtension on PagifyAsyncCallStatus {
+  bool get isLoading => this == PagifyAsyncCallStatus.loading;
+  bool get isError => this == PagifyAsyncCallStatus.error;
+  bool get isNetworkError => this == PagifyAsyncCallStatus.networkError;
+  bool get isSuccess => this == PagifyAsyncCallStatus.success;
 }
 
 class AsyncCallStatusInterceptor{
-  AsyncCallStatus currentState;
+  PagifyAsyncCallStatus currentState;
 
   AsyncCallStatusInterceptor(this.currentState);
 
-  final StreamController<AsyncCallStatus> _controller = StreamController<AsyncCallStatus>();
-  void updateStatus(AsyncCallStatus newStatus){
+  final StreamController<PagifyAsyncCallStatus> _controller = StreamController<PagifyAsyncCallStatus>();
+  void updateStatus(PagifyAsyncCallStatus newStatus){
     currentState = newStatus;
     _controller.add(newStatus);
   }
 
-  Stream<AsyncCallStatus> get stream => _controller.stream;
-  Stream<AsyncCallStatus> get listenStatusChanges{
+  Stream<PagifyAsyncCallStatus> get stream => _controller.stream;
+  Stream<PagifyAsyncCallStatus> get listenStatusChanges{
     return stream;
   }
 

@@ -3,7 +3,7 @@ import 'package:pagify/helpers/scroll_controller.dart';
 import 'dart:math' as math;
 import 'add_frame.dart';
 
-class EasyPaginationController<E> {
+class PagifyController<E> {
   final ValueNotifier<List<E>> items = ValueNotifier<List<E>>([]);
   final ValueNotifier<bool> needToRefresh = ValueNotifier<bool>(false);
 

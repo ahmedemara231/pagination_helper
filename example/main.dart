@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:pagify/helpers/controller.dart';
 import 'package:pagify/helpers/data_and_pagination_data.dart';
 import 'package:pagify/helpers/errors.dart';
-import 'package:pagify/pagination_with_reverse_and_status_stream.dart';
+import 'package:pagify/Pagify.dart';
 
 void main() {
-  runApp(const EasyPaginationExample());
+  runApp(const PagifyExample());
 }
 
 class ExampleModel{
@@ -18,30 +18,30 @@ class ExampleModel{
   });
 }
 
-class EasyPaginationExample extends StatefulWidget {
-  const EasyPaginationExample({super.key});
+class PagifyExample extends StatefulWidget {
+  const PagifyExample({super.key});
 
   @override
-  State<EasyPaginationExample> createState() => _EasyPaginationExampleState();
+  State<PagifyExample> createState() => _PagifyExampleState();
 }
 
-class _EasyPaginationExampleState extends State<EasyPaginationExample> {
+class _PagifyExampleState extends State<PagifyExample> {
   Future<ExampleModel> _fetchData(int currentPage) async {
     await Future.delayed(const Duration(seconds: 2)); // simulate api call with current page
     final items = List.generate(25, (index) => 'Item $index');
     return ExampleModel(items: items, totalPages: 4);
   }
 
-  late EasyPaginationController<String> _easyPaginationController;
+  late PagifyController<String> _PagifyController;
   @override
   void initState() {
-    _easyPaginationController = EasyPaginationController<String>();
+    _PagifyController = PagifyController<String>();
     super.initState();
   }
 
   @override
   void dispose() {
-    _easyPaginationController.dispose();
+    _PagifyController.dispose();
     super.dispose();
   }
   @override
@@ -50,10 +50,10 @@ class _EasyPaginationExampleState extends State<EasyPaginationExample> {
       title: 'Awesome Button Example',
       home: Scaffold(
         appBar: AppBar(title: const Text('Example Usage')),
-        body: EasyPagination<ExampleModel, String>.listView(
-          controller: _easyPaginationController,
+        body: Pagify<ExampleModel, String>.listView(
+          controller: _PagifyController,
           asyncCall: (page)async => await _fetchData(page),
-          mapper: (response) => DataListAndPaginationData(
+          mapper: (response) => PagifyData(
               data: response.items,
               paginationData: PaginationData(
                 totalPages: response.totalPages,

@@ -1,12 +1,12 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 
-class EasyPaginationError implements Exception{
+class PagifyError implements Exception{
   final String msg;
-  EasyPaginationError(this.msg);
+  PagifyError(this.msg);
 }
 
-class PaginationNetworkError extends EasyPaginationError{
+class PaginationNetworkError extends PagifyError{
   PaginationNetworkError(super.msg);
 }
 

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
-class PaginationHelperRefreshIndicator extends StatelessWidget {
+class PagifyRefreshIndicator extends StatelessWidget {
 
   final Future<void> Function() onRefresh;
   final Widget child;
   final Color? refreshIndicatorBackgroundColor;
   final Color? refreshIndicatorColor;
-  const PaginationHelperRefreshIndicator({super.key,
+  const PagifyRefreshIndicator({super.key,
     required this.onRefresh,
     this.refreshIndicatorBackgroundColor,
     this.refreshIndicatorColor,

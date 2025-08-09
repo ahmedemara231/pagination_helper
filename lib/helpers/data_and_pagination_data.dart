@@ -1,8 +1,8 @@
-class DataListAndPaginationData<E>{
+class PagifyData<E>{
   List<E> data;
   PaginationData paginationData;
 
-  DataListAndPaginationData({
+  PagifyData({
     required this.data,
     required this.paginationData,
   });

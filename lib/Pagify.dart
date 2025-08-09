@@ -20,8 +20,8 @@ enum RankingType {gridView, listView}
 
 // Response is full response which includes data list and pagination data
 // Model is specific model is the list
-class EasyPagination<Response, Model> extends StatefulWidget {
-  final FutureOr<void> Function(AsyncCallStatus status)? onUpdateStatus;
+class Pagify<Response, Model> extends StatefulWidget {
+  final FutureOr<void> Function(PagifyAsyncCallStatus status)? onUpdateStatus;
   final bool isReverse;
   final bool showNoDataAlert;
   final RankingType rankingType;
@@ -32,11 +32,11 @@ class EasyPagination<Response, Model> extends StatefulWidget {
   final FutureOr<void> Function(int currentPage, List<Model> data)? onSuccess;
   final FutureOr<void> Function(int currentPage, String errorMessage)? onError;
   final Future<Response> Function(int currentPage) asyncCall;
-  final DataListAndPaginationData<Model> Function(Response response) mapper;
+  final PagifyData<Model> Function(Response response) mapper;
   final Widget Function(List<Model> data, int index, Model element) itemBuilder;
   final Widget? loadingBuilder;
   final Widget Function(String errorMsg)? errorBuilder;
-  final EasyPaginationController<Model> controller;
+  final PagifyController<Model> controller;
   final Axis? scrollDirection;
   final bool? shrinkWrap;
   final double? mainAxisSpacing;
@@ -46,7 +46,7 @@ class EasyPagination<Response, Model> extends StatefulWidget {
   final String? noConnectionText;
   final String? emptyListText;
 
-  EasyPagination.gridView({super.key,
+  Pagify.gridView({super.key,
     required this.controller,
     required this.asyncCall,
     required this.mapper,
@@ -72,7 +72,7 @@ class EasyPagination<Response, Model> extends StatefulWidget {
   }) : rankingType = RankingType.gridView, shrinkWrap = true,
         assert(errorMapper.errorWhenHttp != null || errorMapper.errorWhenDio != null);
 
-  EasyPagination.listView({super.key,
+  Pagify.listView({super.key,
     required this.controller,
     required this.asyncCall,
     required this.mapper,
@@ -101,12 +101,12 @@ class EasyPagination<Response, Model> extends StatefulWidget {
 
 
   @override
-  State<EasyPagination<Response, Model>> createState() => _EasyPaginationState<Response, Model>();
+  State<Pagify<Response, Model>> createState() => _PagifyState<Response, Model>();
 }
 
-class _EasyPaginationState<Response, Model> extends State<EasyPagination<Response, Model>> {
+class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
   late RetainableScrollController _scrollController;
-  AsyncCallStatusInterceptor status = AsyncCallStatusInterceptor(AsyncCallStatus.initial);
+  AsyncCallStatusInterceptor status = AsyncCallStatusInterceptor(PagifyAsyncCallStatus.initial);
   int currentPage = 1;
   late int totalPages;
 
@@ -143,10 +143,10 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
     dev.log('enter error handler');
     _logError(e);
     widget.onError?.call(currentPage, errorMsg);
-    setState(() => status.updateStatus(AsyncCallStatus.error));
+    setState(() => status.updateStatus(PagifyAsyncCallStatus.error));
 
     if(e is PaginationNetworkError){
-      setState(() => status.updateStatus(AsyncCallStatus.networkError));
+      setState(() => status.updateStatus(PagifyAsyncCallStatus.networkError));
 
     }else if(e is DioException){
       errorMsg = widget.errorMapper.errorWhenDio?.call(e)?? '';
@@ -230,25 +230,25 @@ class _EasyPaginationState<Response, Model> extends State<EasyPagination<Respons
 
   Future<void> _fetchDataAndMapping({
     FutureOr<void> Function()? whenStart,
-    FutureOr<void> Function(DataListAndPaginationData<Model> mapperResult)? whenEnd,
+    FutureOr<void> Function(PagifyData<Model> mapperResult)? whenEnd,
   })async{
     await whenStart?.call();
-    setState(() => status.updateStatus(AsyncCallStatus.loading));
+    setState(() => status.updateStatus(PagifyAsyncCallStatus.loading));
     await widget.onLoading?.call();
     _scrollController.retainOffset();
     final mapperResult = await _manageMapper();
     if(currentPage <= mapperResult.paginationData.totalPages.toInt()){
       setState(() {
         currentPage++;
-        status.updateStatus(AsyncCallStatus.success);
+        status.updateStatus(PagifyAsyncCallStatus.success);
       });
     }
     await whenEnd?.call(mapperResult);
   }
 
-  Future<DataListAndPaginationData<Model>> _manageMapper()async{
+  Future<PagifyData<Model>> _manageMapper()async{
     final result = await _callApi(widget.asyncCall);
-    final DataListAndPaginationData<Model> mapperResult = widget.mapper(result);
+    final PagifyData<Model> mapperResult = widget.mapper(result);
 
     // should be called every time because the total pages may be changed
     _manageTotalPagesNumber(mapperResult.paginationData.totalPages);
