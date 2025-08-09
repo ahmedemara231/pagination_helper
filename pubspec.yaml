@@ -3,7 +3,6 @@ description: "A flexible and customizable Flutter package for handling paginated
 version: 0.0.3
 homepage: https://github.com/ahmedemara231/pagination_helper
 repository: https://github.com/ahmedemara231/pagination_helper
-publish_to: https://pub.dev
 
 environment:
   sdk: ^3.6.0
