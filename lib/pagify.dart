@@ -107,7 +107,7 @@ class Pagify<Response, Model> extends StatefulWidget {
 
 class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
   late RetainableScrollController _scrollController;
-  AsyncCallStatusInterceptor status = AsyncCallStatusInterceptor(PagifyAsyncCallStatus.initial);
+  AsyncCallStatusInterceptor status = AsyncCallStatusInterceptor();
   int currentPage = 1;
   late int totalPages;
 

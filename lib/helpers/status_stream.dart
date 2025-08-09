@@ -16,12 +16,20 @@ extension AsyncCallStatusExtension on PagifyAsyncCallStatus {
 }
 
 class AsyncCallStatusInterceptor{
-  PagifyAsyncCallStatus currentState;
-  PagifyAsyncCallStatus lastStateBeforeNetworkError = PagifyAsyncCallStatus.initial;
+  late PagifyAsyncCallStatus currentState;
+  late PagifyAsyncCallStatus lastStateBeforeNetworkError;
+  late final StreamController<PagifyAsyncCallStatus> _controller;
 
-  AsyncCallStatusInterceptor(this.currentState);
+  void _init(){
+    currentState = PagifyAsyncCallStatus.initial;
+    lastStateBeforeNetworkError = PagifyAsyncCallStatus.initial;
+    _controller = StreamController<PagifyAsyncCallStatus>();
+  }
 
-  final StreamController<PagifyAsyncCallStatus> _controller = StreamController<PagifyAsyncCallStatus>();
+  AsyncCallStatusInterceptor(){
+    _init();
+  }
+
 
   void updateAllStatues(PagifyAsyncCallStatus newStatus){
     updateStatus(newStatus);
