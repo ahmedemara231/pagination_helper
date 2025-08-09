@@ -285,7 +285,7 @@ class MyModel {
 | `emptyListText` | `String?` | Text shown when list is empty | ❌ |
 | `noConnectionText` | `String?` | Text shown when no internet connection | ❌ |
 
-### EasyPagination.gridView Additional Parameters
+### Pagify.gridView Additional Parameters
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
