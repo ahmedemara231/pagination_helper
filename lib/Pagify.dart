@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as dev;
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -9,12 +10,12 @@ import 'package:lottie/lottie.dart';
 import 'package:pagify/widgets/text.dart';
 import 'generated/assets.dart';
 import 'helpers/add_frame.dart';
-import 'helpers/controller.dart';
 import 'helpers/data_and_pagination_data.dart';
 import 'helpers/errors.dart';
 import 'helpers/message_utils.dart';
 import 'helpers/scroll_controller.dart';
 import 'helpers/status_stream.dart';
+part 'helpers/controller.dart';
 
 enum RankingType {gridView, listView}
 
@@ -203,13 +204,13 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
 
   Future<void> _fetchDataWhenScrollUp() async{
     await _fetchDataWhileScrolling((items) =>
-        widget.controller.updateItems(newItems: items, isReverse: true)
+        widget.controller._updateItems(newItems: items, isReverse: true)
     );
   }
 
   Future<void> _fetchDataWhenScrollDown() async{
     await _fetchDataWhileScrolling((items) =>
-        widget.controller.updateItems(newItems: items, isReverse: false)
+        widget.controller._updateItems(newItems: items, isReverse: false)
     );
   }
 
@@ -217,11 +218,11 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     await _fetchDataAndMapping(
         whenEnd: (mapperResult) async{
           onUpdate(mapperResult.data);
-          await widget.onSuccess?.call(currentPage, widget.controller.items.value);
+          await widget.onSuccess?.call(currentPage, widget.controller._items.value);
           _scrollController.restoreOffset(
               isReverse: widget.isReverse,
               subList: mapperResult.data,
-              totalCurrentItems: widget.controller.items.value.length
+              totalCurrentItems: widget.controller._items.value.length
           );
         }
     );
@@ -272,14 +273,14 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     try {
       await _fetchDataAndMapping(
           whenStart: () {
-            if(currentPage > 1 && widget.controller.items.value.isNotEmpty){
+            if(currentPage > 1 && widget.controller._items.value.isNotEmpty){
               _resetDataWhenRefresh();
             }
           },
           whenEnd: (mapperResult) async{
-            widget.controller.updateItems(newItems: mapperResult.data);
+            widget.controller._updateItems(newItems: mapperResult.data);
             widget.controller.initScrollController(_scrollController);
-            await widget.onSuccess?.call(currentPage, widget.controller.items.value);
+            await widget.onSuccess?.call(currentPage, widget.controller._items.value);
             if(widget.isReverse){
               Frame.addBefore(() => _scrollDownWhileGetDataFirstTimeWhenReverse());
             }
@@ -298,7 +299,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
 
   void _resetDataWhenRefresh() {
     currentPage = 1;
-    widget.controller.items.value.clear();
+    widget.controller._items.value.clear();
   }
 
   Widget _listRanking(){
@@ -352,7 +353,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
 
   Widget _listView() {
     return ValueListenableBuilder(
-      valueListenable: widget.controller.items,
+      valueListenable: widget.controller._items,
       builder: (context, value, child) => Align(
         alignment: widget.isReverse? Alignment.bottomCenter : Alignment.topCenter,
         child: ListView.builder(
@@ -370,7 +371,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
 
   Widget _gridView() {
     return ValueListenableBuilder(
-      valueListenable: widget.controller.items,
+      valueListenable: widget.controller._items,
       builder: (context, value, child) => SingleChildScrollView(
         controller: _scrollController,
         child: Column(
@@ -402,7 +403,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
   }
 
   Widget get _buildLoadingView{
-    if(widget.controller.items.value.isEmpty){
+    if(widget.controller._items.value.isEmpty){
       return _loadingWidget;
     }else{
       return _listRanking();
@@ -423,7 +424,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
   }
 
   Widget get _buildErrorWidget{
-    if(widget.controller.items.value.isNotEmpty){
+    if(widget.controller._items.value.isNotEmpty){
       if(status.currentState.isNetworkError){
         MessageUtils. showSimpleToast(msg: widget.noConnectionText?? 'Check your internet connection', color: Colors.red);
       }else{
@@ -463,7 +464,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
 
 
   Widget get _buildSuccessWidget{
-    if(widget.controller.items.value.isNotEmpty){
+    if(widget.controller._items.value.isNotEmpty){
       return _listRanking();
     }else{
       return Column(
@@ -491,7 +492,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder(
-      valueListenable: widget.controller.needToRefresh,
+      valueListenable: widget.controller._needToRefresh,
       builder: (context, value, child) =>
       status.currentState.isError || status.currentState.isNetworkError?
       _buildErrorWidget : status.currentState.isLoading?

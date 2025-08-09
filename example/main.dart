@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:pagify/helpers/controller.dart';
 import 'package:pagify/helpers/data_and_pagination_data.dart';
 import 'package:pagify/helpers/errors.dart';
 import 'package:pagify/Pagify.dart';
@@ -50,7 +49,10 @@ class _PagifyExampleState extends State<PagifyExample> {
       title: 'Awesome Button Example',
       home: Scaffold(
         appBar: AppBar(title: const Text('Example Usage')),
-        body: Pagify<ExampleModel, String>.listView(
+        body: Pagify<ExampleModel, String>.gridView(
+          childAspectRatio: 2,
+          mainAxisSpacing: 10,
+          crossAxisCount: 12,
           controller: _PagifyController,
           asyncCall: (page)async => await _fetchData(page),
           mapper: (response) => PagifyData(

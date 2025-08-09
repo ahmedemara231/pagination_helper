@@ -1,11 +1,10 @@
-import 'package:flutter/material.dart';
-import 'package:pagify/helpers/scroll_controller.dart';
-import 'dart:math' as math;
-import 'add_frame.dart';
+part of '../Pagify.dart';
 
 class PagifyController<E> {
-  final ValueNotifier<List<E>> items = ValueNotifier<List<E>>([]);
-  final ValueNotifier<bool> needToRefresh = ValueNotifier<bool>(false);
+  final ValueNotifier<List<E>> _items = ValueNotifier<List<E>>([]);
+
+  final ValueNotifier<bool> _needToRefresh = ValueNotifier<bool>(false);
+
 
   RetainableScrollController? _scrollController;
   void initScrollController(RetainableScrollController controller){
@@ -35,53 +34,53 @@ class PagifyController<E> {
   }
 
   void _notify(){
-    final List<E> list = List.from(items.value);
-    items.value = list;
+    final List<E> list = List.from(_items.value);
+    _items.value = list;
     // items.notifyListeners();
   }
 
-  void updateItems({
+  void _updateItems({
     required List<E> newItems,
     bool isReverse = false
   }) {
     switch(isReverse){
       case true:
-        items.value.insertAll(0, newItems);
+        _items.value.insertAll(0, newItems);
         break;
       case false:
-        items.value.addAll(newItems);
+        _items.value.addAll(newItems);
         break;
     }
     _notify();
   }
 
   E? getRandomItem() {
-    if (items.value.isEmpty) return null;
+    if (_items.value.isEmpty) return null;
     final random = math.Random();
-    return items.value[random.nextInt(items.value.length)];
+    return _items.value[random.nextInt(_items.value.length)];
   }
 
   List<E> filter(bool Function(E item) condition) {
-    return items.value.where(condition).toList();
+    return _items.value.where(condition).toList();
   }
 
   void filterAndUpdate(bool Function(E item) condition) {
-    items.value = List.from(filter(condition));
+    _items.value = List.from(filter(condition));
     _notify();
   }
 
 
   void sort(int Function(E a, E b) compare) {
-    items.value.sort(compare);
+    _items.value.sort(compare);
     _notify();
   }
 
   void _executeWholeRefresh(){
-    needToRefresh.value = !needToRefresh.value;
+    _needToRefresh.value = !_needToRefresh.value;
   }
 
   void _checkAndNotify(){
-    if(items.value.length == 1){
+    if(_items.value.length == 1){
       _executeWholeRefresh();
     }else{
       _notify();
@@ -89,35 +88,35 @@ class PagifyController<E> {
   }
 
   void addItem(E item) {
-    items.value.add(item);
+    _items.value.add(item);
     _checkAndNotify();
   }
 
   void addItemAt(int index, E item) {
-    items.value.insert(index, item);
+    _items.value.insert(index, item);
     _checkAndNotify();
   }
 
   void addAtBeginning(E item) {
-    items.value.insert(0, item);
+    _items.value.insert(0, item);
     _checkAndNotify();
   }
 
   E? accessElement(int index) {
-    return items.value.elementAtOrNull(index);
+    return _items.value.elementAtOrNull(index);
   }
 
   void replaceWith(int oldItemIndex, E item) {
-    items.value[oldItemIndex] = item;
+    _items.value[oldItemIndex] = item;
     _notify();
   }
 
-  void refresh(){
-    _notify();
-  }
+  // void _refresh(){
+  //   _notify();
+  // }
 
   void _checkAndNotifyAfterRemoving(){
-    if(items.value.isEmpty){
+    if(_items.value.isEmpty){
       _executeWholeRefresh();
     }else{
       _notify();
@@ -125,26 +124,26 @@ class PagifyController<E> {
   }
 
   void removeItem(E item) {
-    items.value.remove(item);
+    _items.value.remove(item);
     _checkAndNotifyAfterRemoving();
   }
 
   void removeAt(int index){
-    items.value.removeAt(index);
+    _items.value.removeAt(index);
     _checkAndNotifyAfterRemoving();
   }
 
   void removeWhere(bool Function(E item) condition){
-    items.value.removeWhere(condition);
+    _items.value.removeWhere(condition);
     _checkAndNotifyAfterRemoving();
   }
 
   void clear() {
-    items.value.clear();
+    _items.value.clear();
     _notify();
   }
 
   void dispose() {
-    items.dispose();
+    _items.dispose();
   }
 }
