@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pagify/helpers/data_and_pagination_data.dart';
 import 'package:pagify/helpers/errors.dart';
-import 'package:pagify/Pagify.dart';
+import 'package:pagify/pagify.dart';
 
 void main() {
   runApp(const PagifyExample());

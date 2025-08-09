@@ -1,4 +1,4 @@
-part of '../Pagify.dart';
+part of '../pagify.dart';
 
 class PagifyController<E> {
   final ValueNotifier<List<E>> _items = ValueNotifier<List<E>>([]);

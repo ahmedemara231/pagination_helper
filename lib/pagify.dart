@@ -116,6 +116,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     super.initState();
     _scrollController = RetainableScrollController();
     _scrollController.addListener(() => _onScroll());
+    _listenToNetworkChanges();
     if(widget.onUpdateStatus != null){
       status.listenStatusChanges.listen((event) => widget.onUpdateStatus!(event));
     }
@@ -144,10 +145,10 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     dev.log('enter error handler');
     _logError(e);
     widget.onError?.call(currentPage, errorMsg);
-    setState(() => status.updateStatus(PagifyAsyncCallStatus.error));
+    setState(() => status.updateAllStatues(PagifyAsyncCallStatus.error));
 
     if(e is PaginationNetworkError){
-      setState(() => status.updateStatus(PagifyAsyncCallStatus.networkError));
+      setState(() => status.updateAllStatues(PagifyAsyncCallStatus.networkError));
 
     }else if(e is DioException){
       errorMsg = widget.errorMapper.errorWhenDio?.call(e)?? '';
@@ -234,14 +235,14 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     FutureOr<void> Function(PagifyData<Model> mapperResult)? whenEnd,
   })async{
     await whenStart?.call();
-    setState(() => status.updateStatus(PagifyAsyncCallStatus.loading));
+    setState(() => status.updateAllStatues(PagifyAsyncCallStatus.loading));
     await widget.onLoading?.call();
     _scrollController.retainOffset();
     final mapperResult = await _manageMapper();
     if(currentPage <= mapperResult.paginationData.totalPages.toInt()){
       setState(() {
         currentPage++;
-        status.updateStatus(PagifyAsyncCallStatus.success);
+        status.updateAllStatues(PagifyAsyncCallStatus.success);
       });
     }
     await whenEnd?.call(mapperResult);
@@ -258,15 +259,43 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
 
   void _manageTotalPagesNumber(int totalPagesNumber) => totalPages = totalPagesNumber;
 
-  Future<Response> _callApi(Future<Response> Function(int currentPage) asyncCall)async{
-    final connectivityResult = await Connectivity().checkConnectivity();
+  late final Connectivity _connectivity = Connectivity();
+
+  Future<void> _checkAndMake({
+    required List<ConnectivityResult> connectivityResult,
+    required FutureOr<void> Function() onConnected,
+    required FutureOr<void> Function() onDisconnected,
+})async{
     if(connectivityResult.contains(ConnectivityResult.none)){
-      throw PaginationNetworkError(widget.noConnectionText?? 'Check your internet connection');
+      await onDisconnected.call();
 
     }else{
-      final Response result = await asyncCall(currentPage);
-      return result;
+      await onConnected.call();
     }
+}
+  Future<Response> _callApi(Future<Response> Function(int currentPage) asyncCall)async{
+    late final Response waitingResult;
+     final connectivityResult = await _connectivity.checkConnectivity();
+     await _checkAndMake(
+       connectivityResult: connectivityResult,
+       onConnected: () async{
+         final Response result = await asyncCall(currentPage);
+         waitingResult = result;
+       },
+       onDisconnected: () => throw PaginationNetworkError(widget.noConnectionText?? 'Check your internet connection')
+     );
+
+     return waitingResult;
+  }
+
+  void _listenToNetworkChanges(){
+    _connectivity.onConnectivityChanged.listen((networkStatus){
+      _checkAndMake(
+          connectivityResult: networkStatus,
+          onConnected: () => status.setLastStatusAsCurrent(),
+          onDisconnected: () => status.updateAllStatues(PagifyAsyncCallStatus.networkError)
+      );
+    });
   }
 
   Future<void> _fetchDataFirstTimeOrRefresh() async {
@@ -435,7 +464,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
       if(status.currentState.isNetworkError){
         return Column(
           children: [
-            // Lottie.asset(Assets.lottieNoInternet),
+            Lottie.asset(Assets.lottieNoInternet),
             const SizedBox(height: 10),
             Text(
                 widget.noConnectionText?? 'Check your internet connection',
@@ -469,7 +498,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     }else{
       return Column(
         children: [
-          // Lottie.asset(Assets.lottieNoData),
+          Lottie.asset(Assets.lottieNoData),
           const SizedBox(height: 10),
           Text(widget.emptyListText?? 'There is no data right now!')
         ],
