@@ -293,8 +293,8 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
 
   bool isInitialized = false;
   void _listenToNetworkChanges(){
-    if(isInitialized){
-      _connectivity.onConnectivityChanged.listen((networkStatus){
+    _connectivity.onConnectivityChanged.listen((networkStatus){
+      if(isInitialized){
         dev.log('enter events $networkStatus');
         _checkAndMake(
             connectivityResult: networkStatus,
@@ -303,10 +303,10 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
             )),
             onDisconnected: () => setState(() => status.updateAllStatues(PagifyAsyncCallStatus.networkError))
         );
-      });
-    }
+      }
+    });
 
-    isInitialized = true;
+    Future.delayed(const Duration(seconds: 1), () => isInitialized = true);
   }
 
   Future<void> _fetchDataFirstTimeOrRefresh() async {
