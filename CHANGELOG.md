@@ -1,4 +1,4 @@
-## 0.0.3
+## 0.0.4
 
 * Added support for both ListView and GridView implementations
 * Implemented comprehensive error handling for network operations
@@ -7,3 +7,4 @@
 * Implemented efficient RefreshIndicator integration with proper state management
 * Optimized loading states for better user experience
 * Fixed minor UI inconsistencies in the widget rendering
+* handed network status with stream

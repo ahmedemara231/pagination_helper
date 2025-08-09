@@ -7,7 +7,7 @@ class PagifyController<E> {
 
 
   RetainableScrollController? _scrollController;
-  void initScrollController(RetainableScrollController controller){
+  void _initScrollController(RetainableScrollController controller){
     _scrollController ??= controller;
   }
 

@@ -110,6 +110,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
   AsyncCallStatusInterceptor status = AsyncCallStatusInterceptor();
   int currentPage = 1;
   late int totalPages;
+  late final StreamSubscription<PagifyAsyncCallStatus> _statusSubscription;
 
   @override
   void initState() {
@@ -118,7 +119,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     _scrollController.addListener(() => _onScroll());
     _listenToNetworkChanges();
     if(widget.onUpdateStatus != null){
-      status.listenStatusChanges.listen((event) => widget.onUpdateStatus!(event));
+      _statusSubscription = status.listenStatusChanges.listen((event) => widget.onUpdateStatus!(event));
     }
     _fetchDataFirstTimeOrRefresh();
   }
@@ -127,6 +128,8 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
   void dispose() {
     _scrollController.dispose();
     status.dispose();
+    _connectivitySubscription.cancel();
+    _statusSubscription.cancel();
     super.dispose();
   }
 
@@ -292,8 +295,9 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
   }
 
   bool isInitialized = false;
+  late final StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
   void _listenToNetworkChanges(){
-    _connectivity.onConnectivityChanged.listen((networkStatus){
+    _connectivitySubscription = _connectivity.onConnectivityChanged.listen((networkStatus){
       if(isInitialized){
         dev.log('enter events $networkStatus');
         _checkAndMake(
@@ -319,7 +323,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
           },
           whenEnd: (mapperResult) async{
             widget.controller._updateItems(newItems: mapperResult.data);
-            widget.controller.initScrollController(_scrollController);
+            widget.controller._initScrollController(_scrollController);
             await widget.onSuccess?.call(currentPage, widget.controller._items.value);
             if(widget.isReverse){
               Frame.addBefore(() => _scrollDownWhileGetDataFirstTimeWhenReverse());
