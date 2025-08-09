@@ -1,4 +1,4 @@
-# EasyPagination
+# Pagify
 
 A powerful and flexible Flutter package for implementing pagination with both ListView and GridView support. This package handles infinite scrolling, pull-to-refresh, loading states, error handling, and network connectivity checks automatically.
 
@@ -6,7 +6,6 @@ A powerful and flexible Flutter package for implementing pagination with both Li
 
 - ✅ **Dual View Support**: Both ListView and GridView implementations
 - ✅ **Infinite Scrolling**: Automatic loading of next pages when scrolling reaches the end
-- ✅ **Pull-to-Refresh**: Built-in refresh indicator support
 - ✅ **Network Awareness**: Automatic network connectivity checking
 - ✅ **Error Handling**: Comprehensive error handling for HTTP and Dio exceptions
 - ✅ **Loading States**: Customizable loading indicators and states
@@ -21,7 +20,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  easy_pagination: ^1.0.0
+  pagify: ^0.0.3
 ```
 
 Then run:
@@ -42,135 +41,97 @@ This package uses the following dependencies:
 ### ListView Implementation
 
 ```dart
-import 'package:flutter/material.dart';
-import 'package:easy_pagination/easy_pagination.dart';
+class ExampleModel{
+  List<String> items;
+  int totalPages;
 
-class MyPaginatedList extends StatefulWidget {
-  @override
-  _MyPaginatedListState createState() => _MyPaginatedListState();
+  ExampleModel({
+    required this.items,
+    required this.totalPages
+  });
 }
 
-class _MyPaginatedListState extends State<MyPaginatedList> {
-  final EasyPaginationController<MyModel> controller = EasyPaginationController<MyModel>();
+class PagifyExample extends StatefulWidget {
+  const PagifyExample({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Paginated List')),
-      body: EasyPagination.listView(
-        controller: controller,
-        asyncCall: (currentPage) => fetchData(currentPage),
-        mapper: (response) => DataListAndPaginationData(
-          data: response.items,
-          paginationData: PaginationData(
-            perPage: response.perPage,
-            totalPages: response.totalPages,
-          ),
-        ),
-        errorMapper: ErrorMapper(
-          errorWhenDio: (e) => "Network error: ${e.message}",
-          errorWhenHttp: (e) => "HTTP error: ${e.message}",
-        ),
-        itemBuilder: (data, index, item) => ListTile(
-          title: Text(item.title),
-          subtitle: Text(item.description),
-        ),
-      ),
-    );
+  State<PagifyExample> createState() => _PagifyExampleState();
+}
+
+class _PagifyExampleState extends State<PagifyExample> {
+  Future<ExampleModel> _fetchData(int currentPage) async {
+    await Future.delayed(const Duration(seconds: 2)); // simulate api call with current page
+    final items = List.generate(25, (index) => 'Item $index');
+    return ExampleModel(items: items, totalPages: 4);
   }
 
-  Future<ApiResponse> fetchData(int page) async {
-    // Your API call implementation
-    final response = await apiService.getData(page: page);
-    return ApiResponse.fromJson(response.data);
+  late PagifyController<String> _PagifyController;
+  @override
+  void initState() {
+    _PagifyController = PagifyController<String>();
+    super.initState();
   }
 
   @override
   void dispose() {
-    controller.dispose();
+    _PagifyController.dispose();
     super.dispose();
   }
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Awesome Button Example',
+      home: Scaffold(
+        appBar: AppBar(title: const Text('Example Usage')),
+        body: Pagify<ExampleModel, String>.listView(
+          controller: _PagifyController,
+          asyncCall: (page)async => await _fetchData(page),
+          mapper: (response) => PagifyData(
+              data: response.items,
+              paginationData: PaginationData(
+                totalPages: response.totalPages,
+                perPage: 10,
+              )
+          ),
+          errorMapper: ErrorMapper(
+            errorWhenDio: (e) => e.response?.data['errorMsg'], // if you using Dio
+            errorWhenHttp: (e) => e.message, // if you using Http
+          ),
+          itemBuilder: (data, index, element) => Text(data[index])
+        )
+      ),
+    );
+  }
 }
-```
 
 ### GridView Implementation
 
 ```dart
-EasyPagination.gridView(
-  controller: controller,
-  crossAxisCount: 2,
-  childAspectRatio: 0.8,
-  mainAxisSpacing: 10.0,
-  crossAxisSpacing: 10.0,
-  asyncCall: (currentPage) => fetchData(currentPage),
-  mapper: (response) => DataListAndPaginationData(
-    data: response.items,
-    paginationData: PaginationData(
-      perPage: response.perPage,
-      totalPages: response.totalPages,
-    ),
-  ),
-  errorMapper: ErrorMapper(
-    errorWhenDio: (e) => "Error: ${e.message}",
-  ),
-  itemBuilder: (data, index, item) => Card(
-    child: Column(
-      children: [
-        Image.network(item.imageUrl),
-        Text(item.title),
-      ],
-    ),
-  ),
-)
-```
-
-## Advanced Configuration
-
-### Custom Error Handling
-
-```dart
-EasyPagination.listView(
-  // ... other parameters
-  errorMapper: ErrorMapper(
-    errorWhenDio: (DioException e) {
-      switch (e.type) {
-        case DioExceptionType.connectionTimeout:
-          return "Connection timeout. Please try again.";
-        case DioExceptionType.receiveTimeout:
-          return "Server response timeout.";
-        case DioExceptionType.badResponse:
-          return "Server error: ${e.response?.statusCode}";
-        default:
-          return "Network error occurred.";
-      }
-    },
-    errorWhenHttp: (HttpException e) => "HTTP Error: ${e.message}",
-  ),
-  onError: (currentPage, errorMessage) {
-    print("Error on page $currentPage: $errorMessage");
-    // Handle error (show snackbar, log, etc.)
-  },
-  errorBuilder: (errorMsg) => Container(
-    padding: EdgeInsets.all(20),
-    child: Column(
-      children: [
-        Icon(Icons.error, color: Colors.red, size: 64),
-        SizedBox(height: 16),
-        Text(errorMsg, textAlign: TextAlign.center),
-        ElevatedButton(
-          onPressed: () => controller.refresh(),
-          child: Text('Retry'),
-        ),
-      ],
-    ),
-  ),
-)
+Pagify<ExampleModel, String>.gridView(
+          childAspectRatio: 2,
+          mainAxisSpacing: 10,
+          crossAxisCount: 12,
+          controller: _PagifyController,
+          asyncCall: (page)async => await _fetchData(page),
+          mapper: (response) => PagifyData(
+              data: response.items,
+              paginationData: PaginationData(
+                totalPages: response.totalPages,
+                perPage: 10,
+              )
+          ),
+          errorMapper: ErrorMapper(
+            errorWhenDio: (e) => e.response?.data['errorMsg'], // if you using Dio
+            errorWhenHttp: (e) => e.message, // if you using Http
+          ),
+          itemBuilder: (data, index, element) => Text(data[index])
+        )
 ```
 
 ### Custom Loading Widget
 
 ```dart
-EasyPagination.listView(
+Pagify<ExampleModel, String>.listView(
   // ... other parameters
   loadingBuilder: Container(
     height: 100,
@@ -191,7 +152,7 @@ EasyPagination.listView(
 ### Reverse Pagination (Chat-like Interface)
 
 ```dart
-EasyPagination.listView(
+Pagify<ExampleModel, String>.listView(
   controller: controller,
   isReverse: true, // Enable reverse pagination
   asyncCall: (currentPage) => fetchOlderMessages(currentPage),
@@ -208,10 +169,10 @@ EasyPagination.listView(
 
 ## Controller Methods
 
-The `EasyPaginationController` provides various methods to programmatically control the pagination:
+The `PagifyController` provides various methods to programmatically control the pagination:
 
 ```dart
-final controller = EasyPaginationController<MyModel>();
+final controller = PagifyController<MyModel>();
 
 // Add items
 controller.addItem(newItem);
@@ -250,20 +211,18 @@ controller.clear();
 
 ### Required Response Structure
 
-Your API response should be mappable to `DataListAndPaginationData`:
+Your API response should be mappable to `PagifyData`:
 
 ```dart
 class ApiResponse {
   final List<MyModel> items;
   final int perPage;
   final int totalPages;
-  final int currentPage;
 
   ApiResponse({
     required this.items,
     required this.perPage,
     required this.totalPages,
-    required this.currentPage,
   });
 
   factory ApiResponse.fromJson(Map<String, dynamic> json) {
@@ -306,16 +265,16 @@ class MyModel {
 
 ## Configuration Parameters
 
-### EasyPagination.listView Parameters
+### Pagify.listView Parameters
 
 | Parameter | Type | Description | Required |
 |-----------|------|-------------|----------|
-| `controller` | `EasyPaginationController<Model>` | Controller for managing pagination state | ✅ |
+| `controller` | `PagifyController<Model>` | Controller for managing pagination state | ✅ |
 | `asyncCall` | `Future<Response> Function(int currentPage)` | Function to fetch data for given page | ✅ |
-| `mapper` | `DataListAndPaginationData<Model> Function(Response)` | Maps API response to required format | ✅ |
+| `mapper` | `PagifyControllerData<Model> Function(Response)` | Maps API response to required format | ✅ |
 | `errorMapper` | `ErrorMapper` | Handles different types of errors | ✅ |
 | `itemBuilder` | `Widget Function(List<Model>, int, Model)` | Builds individual list items | ✅ |
-| `onUpdateStatus` | `FutureOr<void> Function(AsyncCallStatus)?` | Callback for status changes | ❌ |
+| `onUpdateStatus` | `FutureOr<void> Function(PagifyAsyncCallStatus)?` | Callback for status changes | ❌ |
 | `isReverse` | `bool` | Enable reverse pagination | ❌ |
 | `onSuccess` | `Function(int currentPage, List<Model> data)?` | Success callback | ❌ |
 | `onError` | `Function(int currentPage, String errorMessage)?` | Error callback | ❌ |
@@ -337,10 +296,10 @@ class MyModel {
 
 ## Async Call Status
 
-The package provides different status states through `AsyncCallStatus`:
+The package provides different status states through `PagifyAsyncCallStatus`:
 
 ```dart
-enum AsyncCallStatus {
+enum PagifyAsyncCallStatus {
   initial,    // Initial state
   loading,    // Data is being loaded
   success,    // Data loaded successfully
@@ -352,7 +311,7 @@ enum AsyncCallStatus {
 You can listen to status changes:
 
 ```dart
-EasyPagination.listView(
+Pagify.listView(
   // ... other parameters
   onUpdateStatus: (status) {
     switch (status) {
