@@ -107,10 +107,10 @@ class Pagify<Response, Model> extends StatefulWidget {
 
 class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
   late RetainableScrollController _scrollController;
-  AsyncCallStatusInterceptor status = AsyncCallStatusInterceptor();
-  int currentPage = 1;
-  late int totalPages;
-  late final StreamSubscription<PagifyAsyncCallStatus> _statusSubscription;
+  AsyncCallStatusInterceptor asyncCallState = AsyncCallStatusInterceptor();
+  int _currentPage = 1;
+  late int _totalPages;
+  StreamSubscription<PagifyAsyncCallStatus>? _statusSubscription;
 
   @override
   void initState() {
@@ -119,7 +119,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     _scrollController.addListener(() => _onScroll());
     _listenToNetworkChanges();
     if(widget.onUpdateStatus != null){
-      _statusSubscription = status.listenStatusChanges.listen((event) => widget.onUpdateStatus!(event));
+      _statusSubscription = asyncCallState.listenStatusChanges.listen((event) => widget.onUpdateStatus!(event));
     }
     _fetchDataFirstTimeOrRefresh();
   }
@@ -127,13 +127,13 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
   @override
   void dispose() {
     _scrollController.dispose();
-    status.dispose();
+    asyncCallState.dispose();
     _connectivitySubscription.cancel();
-    _statusSubscription.cancel();
+    _statusSubscription?.cancel();
     super.dispose();
   }
 
-  String errorMsg = '';
+  String _errorMsg = '';
   void _logError(Exception e){
     if(e is DioException){
       String prettyJson = const JsonEncoder.withIndent('  ').convert(e.response?.data);
@@ -147,21 +147,21 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
   FutureOr<void> _errorHandler(Exception e){
     dev.log('enter error handler');
     _logError(e);
-    widget.onError?.call(currentPage, errorMsg);
+    widget.onError?.call(_currentPage, _errorMsg);
 
     if(e is PaginationNetworkError){
-      setState(() => status.updateAllStatues(PagifyAsyncCallStatus.networkError));
+      setState(() => asyncCallState.updateAllStatues(PagifyAsyncCallStatus.networkError));
 
     }else{
-      setState(() => status.updateAllStatues(PagifyAsyncCallStatus.error));
+      setState(() => asyncCallState.updateAllStatues(PagifyAsyncCallStatus.error));
       if(e is DioException){
-        errorMsg = widget.errorMapper.errorWhenDio?.call(e)?? '';
+        _errorMsg = widget.errorMapper.errorWhenDio?.call(e)?? '';
 
       }else if(e is HttpException){
-        errorMsg = widget.errorMapper.errorWhenHttp?.call(e)?? '';
+        _errorMsg = widget.errorMapper.errorWhenHttp?.call(e)?? '';
 
       }else{
-        errorMsg = 'There is error occur $e';
+        _errorMsg = 'There is error occur $e';
       }
     }
   }
@@ -194,15 +194,15 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
       case true:
         if (_scrollController.position.pixels ==
             _scrollController.position.minScrollExtent &&
-            !status.currentState.isLoading &&
-            currentPage <= totalPages){
+            !asyncCallState.currentState.isLoading &&
+            _currentPage <= _totalPages){
           await _fetchDataWhenScrollUp();
         }
       default:
         if (_scrollController.position.pixels ==
             _scrollController.position.maxScrollExtent &&
-            !status.currentState.isLoading &&
-            currentPage <= totalPages) {
+            !asyncCallState.currentState.isLoading &&
+            _currentPage <= _totalPages) {
           await _fetchDataWhenScrollDown();
         }
     }
@@ -224,7 +224,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     await _fetchDataAndMapping(
         whenEnd: (mapperResult) async{
           onUpdate(mapperResult.data);
-          await widget.onSuccess?.call(currentPage, widget.controller._items.value);
+          await widget.onSuccess?.call(_currentPage, widget.controller._items.value);
           _scrollController.restoreOffset(
               isReverse: widget.isReverse,
               subList: mapperResult.data,
@@ -240,14 +240,14 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     FutureOr<void> Function(PagifyData<Model> mapperResult)? whenEnd,
   })async{
     await whenStart?.call();
-    setState(() => status.updateAllStatues(PagifyAsyncCallStatus.loading));
+    setState(() => asyncCallState.updateAllStatues(PagifyAsyncCallStatus.loading));
     await widget.onLoading?.call();
     _scrollController.retainOffset();
     final mapperResult = await _manageMapper();
-    if(currentPage <= mapperResult.paginationData.totalPages.toInt()){
+    if(_currentPage <= mapperResult.paginationData.totalPages.toInt()){
       setState(() {
-        currentPage++;
-        status.updateAllStatues(PagifyAsyncCallStatus.success);
+        _currentPage++;
+        asyncCallState.updateAllStatues(PagifyAsyncCallStatus.success);
       });
     }
     await whenEnd?.call(mapperResult);
@@ -262,7 +262,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     return mapperResult;
   }
 
-  void _manageTotalPagesNumber(int totalPagesNumber) => totalPages = totalPagesNumber;
+  void _manageTotalPagesNumber(int totalPagesNumber) => _totalPages = totalPagesNumber;
 
   late final Connectivity _connectivity = Connectivity();
 
@@ -285,7 +285,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     await _checkAndMake(
         connectivityResult: connectivityResult,
         onConnected: () async{
-          final Response result = await asyncCall(currentPage);
+          final Response result = await asyncCall(_currentPage);
           waitingResult = result;
         },
         onDisconnected: () => throw PaginationNetworkError(widget.noConnectionText?? 'Check your internet connection')
@@ -299,13 +299,12 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
   void _listenToNetworkChanges(){
     _connectivitySubscription = _connectivity.onConnectivityChanged.listen((networkStatus){
       if(isInitialized){
-        dev.log('enter events $networkStatus');
         _checkAndMake(
             connectivityResult: networkStatus,
-            onConnected: () => setState(() => status.setLastStatusAsCurrent(
+            onConnected: () => setState(() => asyncCallState.setLastStatusAsCurrent(
                 ifLastIsLoading: () async => await _fetchDataFirstTimeOrRefresh()
             )),
-            onDisconnected: () => setState(() => status.updateAllStatues(PagifyAsyncCallStatus.networkError))
+            onDisconnected: () => setState(() => asyncCallState.updateAllStatues(PagifyAsyncCallStatus.networkError))
         );
       }
     });
@@ -317,14 +316,14 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     try {
       await _fetchDataAndMapping(
           whenStart: () {
-            if(currentPage > 1 && widget.controller._items.value.isNotEmpty){
+            if(_currentPage > 1 && widget.controller._items.value.isNotEmpty){
               _resetDataWhenRefresh();
             }
           },
           whenEnd: (mapperResult) async{
             widget.controller._updateItems(newItems: mapperResult.data);
             widget.controller._initScrollController(_scrollController);
-            await widget.onSuccess?.call(currentPage, widget.controller._items.value);
+            await widget.onSuccess?.call(_currentPage, widget.controller._items.value);
             if(widget.isReverse){
               Frame.addBefore(() => _scrollDownWhileGetDataFirstTimeWhenReverse());
             }
@@ -342,7 +341,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
   }
 
   void _resetDataWhenRefresh() {
-    currentPage = 1;
+    _currentPage = 1;
     widget.controller._items.value.clear();
   }
 
@@ -353,12 +352,12 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     return _listView();
   }
 
-  bool get _hasMoreData => currentPage <= totalPages;
-  bool get _shouldShowLoading => _hasMoreData && status.currentState.isLoading;
+  bool get _hasMoreData => _currentPage <= _totalPages;
+  bool get _shouldShowLoading => _hasMoreData && asyncCallState.currentState.isLoading;
   bool get _shouldShowNoData => widget.showNoDataAlert && !_hasMoreData;
   final Widget _noMoreDataText = const AppText('No more data', textAlign: TextAlign.center, color: Colors.grey);
 
-  Widget _buildGridExtraItemSuchNoMoreDataOrLoading({Widget? defaultWidget}){
+  Widget _buildExtraItemSuchNoMoreDataOrLoading({Widget? defaultWidget}){
     if(_shouldShowNoData){
       return _noMoreDataText;
 
@@ -374,13 +373,13 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     if (index < value.length) {
       return widget.itemBuilder(value, index, value[index]);
     } else {
-      return _buildGridExtraItemSuchNoMoreDataOrLoading();
+      return _buildExtraItemSuchNoMoreDataOrLoading();
     }
   }
 
   Widget _buildItemBuilderWhenReverse({required int index, required List<Model> value}) {
     if (index == 0 && (_shouldShowLoading || _shouldShowNoData)) {
-      return _buildGridExtraItemSuchNoMoreDataOrLoading();
+      return _buildExtraItemSuchNoMoreDataOrLoading();
     }
 
     int dataIndex = (_shouldShowLoading || _shouldShowNoData) ? index - 1 : index;
@@ -424,7 +423,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
           MainAxisAlignment.end : MainAxisAlignment.start,
           children: [
             if(widget.isReverse)
-              _buildGridExtraItemSuchNoMoreDataOrLoading(),
+              _buildExtraItemSuchNoMoreDataOrLoading(),
             GridView.count(
               shrinkWrap: widget.shrinkWrap!,
               crossAxisCount: widget.crossAxisCount?? 2,
@@ -439,7 +438,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
               ),
             ),
             if(!widget.isReverse)
-              _buildGridExtraItemSuchNoMoreDataOrLoading(),
+              _buildExtraItemSuchNoMoreDataOrLoading(),
           ],
         ),
       ),
@@ -469,14 +468,14 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
 
   Widget get _buildErrorWidget{
     if(widget.controller._items.value.isNotEmpty){
-      if(status.currentState.isNetworkError){
+      if(asyncCallState.currentState.isNetworkError){
         MessageUtils. showSimpleToast(msg: widget.noConnectionText?? 'Check your internet connection', color: Colors.red);
       }else{
-        MessageUtils.showSimpleToast(msg: errorMsg, color: Colors.red);
+        MessageUtils.showSimpleToast(msg: _errorMsg, color: Colors.red);
       }
       return _listRanking();
     }else{
-      if(status.currentState.isNetworkError){
+      if(asyncCallState.currentState.isNetworkError){
         return Column(
           children: [
             Lottie.asset(Assets.lottieNoInternet),
@@ -495,17 +494,16 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
               Lottie.asset(Assets.lottieApiError),
               const SizedBox(height: 10),
               Text(
-                  errorMsg,
+                  _errorMsg,
                   style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500)
               )
             ],
           );
         default:
-          return widget.errorBuilder!(errorMsg);
+          return widget.errorBuilder!(_errorMsg);
       }
     }
   }
-
 
   Widget get _buildSuccessWidget{
     if(widget.controller._items.value.isNotEmpty){
@@ -538,8 +536,8 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     return ValueListenableBuilder(
       valueListenable: widget.controller._needToRefresh,
       builder: (context, value, child) =>
-      status.currentState.isError || status.currentState.isNetworkError?
-      _buildErrorWidget : status.currentState.isLoading?
+      asyncCallState.currentState.isError || asyncCallState.currentState.isNetworkError?
+      _buildErrorWidget : asyncCallState.currentState.isLoading?
       _buildLoadingView : _buildSuccessWidget,
     );
   }
