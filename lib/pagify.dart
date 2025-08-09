@@ -267,39 +267,46 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     required List<ConnectivityResult> connectivityResult,
     required FutureOr<void> Function() onConnected,
     required FutureOr<void> Function() onDisconnected,
-})async{
+  })async{
     if(connectivityResult.contains(ConnectivityResult.none)){
       await onDisconnected.call();
 
     }else{
       await onConnected.call();
     }
-}
-  Future<Response> _callApi(Future<Response> Function(int currentPage) asyncCall)async{
-    late final Response waitingResult;
-     final connectivityResult = await _connectivity.checkConnectivity();
-     await _checkAndMake(
-       connectivityResult: connectivityResult,
-       onConnected: () async{
-         final Response result = await asyncCall(currentPage);
-         waitingResult = result;
-       },
-       onDisconnected: () => throw PaginationNetworkError(widget.noConnectionText?? 'Check your internet connection')
-     );
-
-     return waitingResult;
   }
 
+  Future<Response> _callApi(Future<Response> Function(int currentPage) asyncCall)async{
+    late final Response waitingResult;
+    final connectivityResult = await _connectivity.checkConnectivity();
+    await _checkAndMake(
+        connectivityResult: connectivityResult,
+        onConnected: () async{
+          final Response result = await asyncCall(currentPage);
+          waitingResult = result;
+        },
+        onDisconnected: () => throw PaginationNetworkError(widget.noConnectionText?? 'Check your internet connection')
+    );
+
+    return waitingResult;
+  }
+
+  bool isInitialized = false;
   void _listenToNetworkChanges(){
-    _connectivity.onConnectivityChanged.listen((networkStatus){
-      _checkAndMake(
-          connectivityResult: networkStatus,
-          onConnected: () => setState(() => status.setLastStatusAsCurrent(
-              ifLastIsLoading: () async => await _fetchDataFirstTimeOrRefresh()
-          )),
-          onDisconnected: () => setState(() => status.updateAllStatues(PagifyAsyncCallStatus.networkError))
-      );
-    });
+    if(isInitialized){
+      _connectivity.onConnectivityChanged.listen((networkStatus){
+        dev.log('enter events $networkStatus');
+        _checkAndMake(
+            connectivityResult: networkStatus,
+            onConnected: () => setState(() => status.setLastStatusAsCurrent(
+                ifLastIsLoading: () async => await _fetchDataFirstTimeOrRefresh()
+            )),
+            onDisconnected: () => setState(() => status.updateAllStatues(PagifyAsyncCallStatus.networkError))
+        );
+      });
+    }
+
+    isInitialized = true;
   }
 
   Future<void> _fetchDataFirstTimeOrRefresh() async {
