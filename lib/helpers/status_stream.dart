@@ -47,9 +47,16 @@ class AsyncCallStatusInterceptor{
     }
   }
 
-  void setLastStatusAsCurrent(){
-    updateStatus(lastStateBeforeNetworkError);
+  void setLastStatusAsCurrent({
+    required Future<void> Function() ifLastIsLoading,
+  }) {
+    if(lastStateBeforeNetworkError == PagifyAsyncCallStatus.loading){
+      ifLastIsLoading.call();
+    }else{
+      updateStatus(lastStateBeforeNetworkError);
+    }
   }
+
   Stream<PagifyAsyncCallStatus> get stream => _controller.stream;
   Stream<PagifyAsyncCallStatus> get listenStatusChanges{
     return stream;

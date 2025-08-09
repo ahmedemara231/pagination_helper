@@ -145,19 +145,21 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     dev.log('enter error handler');
     _logError(e);
     widget.onError?.call(currentPage, errorMsg);
-    setState(() => status.updateAllStatues(PagifyAsyncCallStatus.error));
 
     if(e is PaginationNetworkError){
       setState(() => status.updateAllStatues(PagifyAsyncCallStatus.networkError));
 
-    }else if(e is DioException){
-      errorMsg = widget.errorMapper.errorWhenDio?.call(e)?? '';
-
-    }else if(e is HttpException){
-      errorMsg = widget.errorMapper.errorWhenHttp?.call(e)?? '';
-
     }else{
-      errorMsg = 'There is error occur $e';
+      setState(() => status.updateAllStatues(PagifyAsyncCallStatus.error));
+      if(e is DioException){
+        errorMsg = widget.errorMapper.errorWhenDio?.call(e)?? '';
+
+      }else if(e is HttpException){
+        errorMsg = widget.errorMapper.errorWhenHttp?.call(e)?? '';
+
+      }else{
+        errorMsg = 'There is error occur $e';
+      }
     }
   }
 
@@ -292,8 +294,10 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     _connectivity.onConnectivityChanged.listen((networkStatus){
       _checkAndMake(
           connectivityResult: networkStatus,
-          onConnected: () => status.setLastStatusAsCurrent(),
-          onDisconnected: () => status.updateAllStatues(PagifyAsyncCallStatus.networkError)
+          onConnected: () => setState(() => status.setLastStatusAsCurrent(
+              ifLastIsLoading: () async => await _fetchDataFirstTimeOrRefresh()
+          )),
+          onDisconnected: () => setState(() => status.updateAllStatues(PagifyAsyncCallStatus.networkError))
       );
     });
   }
