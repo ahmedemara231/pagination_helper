@@ -79,8 +79,8 @@ class PagifyController<E> {
     _needToRefresh.value = !_needToRefresh.value;
   }
 
-  void _checkAndNotify(){
-    if(_items.value.length == 1){
+  void _checkAndNotify(bool Function() condition){
+    if(condition.call()){
       _executeWholeRefresh();
     }else{
       _notify();
@@ -89,17 +89,17 @@ class PagifyController<E> {
 
   void addItem(E item) {
     _items.value.add(item);
-    _checkAndNotify();
+    _checkAndNotify(() => _items.value.length == 1);
   }
 
   void addItemAt(int index, E item) {
     _items.value.insert(index, item);
-    _checkAndNotify();
+    _checkAndNotify(() => _items.value.length == 1);
   }
 
   void addAtBeginning(E item) {
     _items.value.insert(0, item);
-    _checkAndNotify();
+    _checkAndNotify(() => _items.value.length == 1);
   }
 
   E? accessElement(int index) {
@@ -111,31 +111,19 @@ class PagifyController<E> {
     _notify();
   }
 
-  // void _refresh(){
-  //   _notify();
-  // }
-
-  void _checkAndNotifyAfterRemoving(){
-    if(_items.value.isEmpty){
-      _executeWholeRefresh();
-    }else{
-      _notify();
-    }
-  }
-
   void removeItem(E item) {
     _items.value.remove(item);
-    _checkAndNotifyAfterRemoving();
+    _checkAndNotify(() => _items.value.isEmpty);
   }
 
   void removeAt(int index){
     _items.value.removeAt(index);
-    _checkAndNotifyAfterRemoving();
+    _checkAndNotify(() => _items.value.isEmpty);
   }
 
   void removeWhere(bool Function(E item) condition){
     _items.value.removeWhere(condition);
-    _checkAndNotifyAfterRemoving();
+    _checkAndNotify(() => _items.value.isEmpty);
   }
 
   void clear() {
