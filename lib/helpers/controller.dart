@@ -33,6 +33,7 @@ class PagifyController<E> {
     ));
   }
 
+  //
   void _notify(){
     final List<E> list = List.from(_items.value);
     _items.value = list;
