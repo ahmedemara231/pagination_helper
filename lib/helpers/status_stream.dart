@@ -23,7 +23,7 @@ class AsyncCallStatusInterceptor{
   void _init(){
     currentState = PagifyAsyncCallStatus.initial;
     lastStateBeforeNetworkError = PagifyAsyncCallStatus.initial;
-    _controller = StreamController<PagifyAsyncCallStatus>();
+    _controller = StreamController<PagifyAsyncCallStatus>.broadcast();
   }
 
   AsyncCallStatusInterceptor(){

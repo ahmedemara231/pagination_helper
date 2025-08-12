@@ -150,10 +150,9 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     widget.onError?.call(_currentPage, _errorMsg);
 
     if(e is PaginationNetworkError){
-      setState(() => asyncCallState.updateAllStatues(PagifyAsyncCallStatus.networkError));
-
+      asyncCallState.updateAllStatues(PagifyAsyncCallStatus.networkError);
     }else{
-      setState(() => asyncCallState.updateAllStatues(PagifyAsyncCallStatus.error));
+      asyncCallState.updateAllStatues(PagifyAsyncCallStatus.error);
       if(e is DioException){
         _errorMsg = widget.errorMapper.errorWhenDio?.call(e)?? '';
 
@@ -240,15 +239,13 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     FutureOr<void> Function(PagifyData<Model> mapperResult)? whenEnd,
   })async{
     await whenStart?.call();
-    setState(() => asyncCallState.updateAllStatues(PagifyAsyncCallStatus.loading));
+    asyncCallState.updateAllStatues(PagifyAsyncCallStatus.loading);
     await widget.onLoading?.call();
     _scrollController.retainOffset();
     final mapperResult = await _manageMapper();
     if(_currentPage <= mapperResult.paginationData.totalPages.toInt()){
-      setState(() {
-        _currentPage++;
-        asyncCallState.updateAllStatues(PagifyAsyncCallStatus.success);
-      });
+      setState(() => _currentPage++);
+      asyncCallState.updateAllStatues(PagifyAsyncCallStatus.success);
     }
     await whenEnd?.call(mapperResult);
   }
@@ -304,7 +301,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
             onConnected: () => setState(() => asyncCallState.setLastStatusAsCurrent(
                 ifLastIsLoading: () async => await _fetchDataFirstTimeOrRefresh()
             )),
-            onDisconnected: () => setState(() => asyncCallState.updateAllStatues(PagifyAsyncCallStatus.networkError))
+            onDisconnected: () => asyncCallState.updateAllStatues(PagifyAsyncCallStatus.networkError)
         );
       }
     });
@@ -538,9 +535,13 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     return ValueListenableBuilder(
       valueListenable: widget.controller._needToRefresh,
       builder: (context, value, child) =>
-      asyncCallState.currentState.isError || asyncCallState.currentState.isNetworkError?
-      _buildErrorWidget : asyncCallState.currentState.isLoading?
-      _buildLoadingView : _buildSuccessWidget,
+      StreamBuilder<PagifyAsyncCallStatus>(
+        stream: asyncCallState.listenStatusChanges,
+        builder: (context, snapshot) =>
+        snapshot.data!.isError || snapshot.data!.isNetworkError?
+        _buildErrorWidget : asyncCallState.currentState.isLoading?
+        _buildLoadingView : _buildSuccessWidget,
+      ),
     );
   }
 }
