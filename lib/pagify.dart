@@ -223,11 +223,11 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     await _fetchDataAndMapping(
         whenEnd: (mapperResult) async{
           onUpdate(mapperResult.data);
-          await widget.onSuccess?.call(_currentPage, widget.controller._items.value);
+          await widget.onSuccess?.call(_currentPage, _itemsList);
           _scrollController.restoreOffset(
               isReverse: widget.isReverse,
               subList: mapperResult.data,
-              totalCurrentItems: widget.controller._items.value.length
+              totalCurrentItems: _itemsList.length
           );
         }
     );
@@ -313,14 +313,14 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     try {
       await _fetchDataAndMapping(
           whenStart: () {
-            if(_currentPage > 1 && widget.controller._items.value.isNotEmpty){
+            if(_currentPage > 1 && _itemsIsNotEmpty){
               _resetDataWhenRefresh();
             }
           },
           whenEnd: (mapperResult) async{
             widget.controller._updateItems(newItems: mapperResult.data);
             widget.controller._initScrollController(_scrollController);
-            await widget.onSuccess?.call(_currentPage, widget.controller._items.value);
+            await widget.onSuccess?.call(_currentPage, _itemsList);
             if(widget.isReverse){
               Frame.addBefore(() => _scrollDownWhileGetDataFirstTimeWhenReverse());
             }
@@ -332,7 +332,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
   }
 
   void _scrollDownWhileGetDataFirstTimeWhenReverse(){
-    if(widget.controller._items.value.isNotEmpty){
+    if(_itemsIsNotEmpty){
       _scrollController.jumpTo(
         _scrollController.position.maxScrollExtent,
       );
@@ -341,7 +341,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
 
   void _resetDataWhenRefresh() {
     _currentPage = 1;
-    widget.controller._items.value.clear();
+    _itemsList.clear();
   }
 
   Widget _listRanking(){
@@ -443,9 +443,12 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
       ),
     );
   }
+  List<Model> get _itemsList => widget.controller._items.value;
+  bool get _itemsIsNotEmpty => _itemsList.isNotEmpty;
+  bool get _itemsIsEmpty => _itemsList.isEmpty;
 
   Widget get _buildLoadingView{
-    if(widget.controller._items.value.isEmpty){
+    if(_itemsIsEmpty){
       return _loadingWidget;
     }else{
       return _listRanking();
@@ -466,7 +469,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
   }
 
   Widget get _buildErrorWidget{
-    if(widget.controller._items.value.isNotEmpty){
+    if(_itemsIsNotEmpty){
       if(asyncCallState.currentState.isNetworkError){
         MessageUtils. showSimpleToast(msg: widget.noConnectionText?? 'Check your internet connection', color: Colors.red);
       }else{
@@ -505,7 +508,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
   }
 
   Widget get _buildSuccessWidget{
-    if(widget.controller._items.value.isNotEmpty){
+    if(_itemsIsNotEmpty){
       return _listRanking();
     }else{
       return Column(
