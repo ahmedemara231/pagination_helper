@@ -16,6 +16,10 @@ extension AsyncCallStatusExtension on PagifyAsyncCallStatus {
 }
 
 class AsyncCallStatusInterceptor{
+
+  static AsyncCallStatusInterceptor? _instance;
+  static AsyncCallStatusInterceptor get instance => _instance ??= AsyncCallStatusInterceptor();
+
   late PagifyAsyncCallStatus currentState;
   late PagifyAsyncCallStatus lastStateBeforeNetworkError;
   late final StreamController<PagifyAsyncCallStatus> _controller;

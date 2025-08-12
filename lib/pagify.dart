@@ -107,7 +107,7 @@ class Pagify<Response, Model> extends StatefulWidget {
 
 class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
   late RetainableScrollController _scrollController;
-  AsyncCallStatusInterceptor asyncCallState = AsyncCallStatusInterceptor();
+  AsyncCallStatusInterceptor asyncCallState = AsyncCallStatusInterceptor.instance;
   int _currentPage = 1;
   late int _totalPages;
   StreamSubscription<PagifyAsyncCallStatus>? _statusSubscription;
@@ -394,52 +394,46 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
   }
 
   Widget _listView() {
-    return ValueListenableBuilder(
-      valueListenable: widget.controller._items,
-      builder: (context, value, child) => Align(
-        alignment: widget.isReverse? Alignment.bottomCenter : Alignment.topCenter,
-        child: ListView.builder(
-            scrollDirection: widget.scrollDirection?? Axis.vertical,
-            shrinkWrap: widget.shrinkWrap?? false,
-            controller: _scrollController,
-            itemCount: _buildItemCount(value),
-            itemBuilder: (context, index) => widget.isReverse?
-            _buildItemBuilderWhenReverse(index: index, value: value) :
-            _buildItemBuilder(index: index, value: value)
-        ),
+    return Align(
+      alignment: widget.isReverse? Alignment.bottomCenter : Alignment.topCenter,
+      child: ListView.builder(
+          scrollDirection: widget.scrollDirection?? Axis.vertical,
+          shrinkWrap: widget.shrinkWrap?? false,
+          controller: _scrollController,
+          itemCount: _buildItemCount(_itemsList),
+          itemBuilder: (context, index) => widget.isReverse?
+          _buildItemBuilderWhenReverse(index: index, value: _itemsList) :
+          _buildItemBuilder(index: index, value: _itemsList)
       ),
     );
   }
 
   Widget _gridView() {
-    return ValueListenableBuilder(
-      valueListenable: widget.controller._items,
-      builder: (context, value, child) => SingleChildScrollView(
-        controller: _scrollController,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisAlignment: widget.isReverse?
-          MainAxisAlignment.end : MainAxisAlignment.start,
-          children: [
-            if(widget.isReverse)
-              _buildExtraItemSuchNoMoreDataOrLoading(),
-            GridView.count(
-              shrinkWrap: widget.shrinkWrap!,
-              crossAxisCount: widget.crossAxisCount?? 2,
-              mainAxisSpacing: widget.mainAxisSpacing?? 0.0,
-              crossAxisSpacing: widget.crossAxisSpacing?? 0.0,
-              childAspectRatio: widget.childAspectRatio?? 1,
-              scrollDirection: widget.scrollDirection?? Axis.vertical,
-              physics: const NeverScrollableScrollPhysics(),
-              children: List.generate(
-                value.length,
-                    (index) => widget.itemBuilder(value, index, value[index]),
-              ),
+    return SingleChildScrollView(
+      controller: _scrollController,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: widget.isReverse?
+        MainAxisAlignment.end : MainAxisAlignment.start,
+        children: [
+          if(widget.isReverse)
+            _buildExtraItemSuchNoMoreDataOrLoading(),
+          GridView.count(
+            shrinkWrap: widget.shrinkWrap!,
+            crossAxisCount: widget.crossAxisCount?? 2,
+            mainAxisSpacing: widget.mainAxisSpacing?? 0.0,
+            crossAxisSpacing: widget.crossAxisSpacing?? 0.0,
+            childAspectRatio: widget.childAspectRatio?? 1,
+            scrollDirection: widget.scrollDirection?? Axis.vertical,
+            physics: const NeverScrollableScrollPhysics(),
+            children: List.generate(
+              _itemsList.length,
+                  (index) => widget.itemBuilder(_itemsList, index, _itemsList[index]),
             ),
-            if(!widget.isReverse)
-              _buildExtraItemSuchNoMoreDataOrLoading(),
-          ],
-        ),
+          ),
+          if(!widget.isReverse)
+            _buildExtraItemSuchNoMoreDataOrLoading(),
+        ],
       ),
     );
   }
@@ -535,20 +529,16 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder(
-      valueListenable: widget.controller._needToRefresh,
-      builder: (context, value, child) =>
-          StreamBuilder<PagifyAsyncCallStatus>(
-              stream: asyncCallState.listenStatusChanges,
-              builder: (context, snapshot) => SnapshotHandler(
-                snapshot: snapshot,
-                loadingWidget: _loadingWidget,
-                activeStateCallBack: (snapshot) => snapshot.hasData?
-                snapshot.data!.isError || snapshot.data!.isNetworkError?
-                _buildErrorWidget : asyncCallState.currentState.isLoading?
-                _buildLoadingView : _buildSuccessWidget : AppText('the stream throws an exception'),
-              )
-          ),
+    return StreamBuilder<PagifyAsyncCallStatus>(
+        stream: asyncCallState.listenStatusChanges,
+        builder: (context, snapshot) => SnapshotHandler(
+          snapshot: snapshot,
+          loadingWidget: _loadingWidget,
+          activeStateCallBack: (snapshot) => snapshot.hasData?
+          snapshot.data!.isError || snapshot.data!.isNetworkError?
+          _buildErrorWidget : asyncCallState.currentState.isLoading?
+          _buildLoadingView : _buildSuccessWidget : AppText('the stream throws an exception'),
+        )
     );
   }
 }

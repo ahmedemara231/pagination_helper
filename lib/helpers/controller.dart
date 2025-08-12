@@ -3,9 +3,6 @@ part of '../pagify.dart';
 class PagifyController<E> {
   final ValueNotifier<List<E>> _items = ValueNotifier<List<E>>([]);
 
-  final ValueNotifier<bool> _needToRefresh = ValueNotifier<bool>(false);
-
-
   RetainableScrollController? _scrollController;
   void _initScrollController(RetainableScrollController controller){
     _scrollController ??= controller;
@@ -33,12 +30,7 @@ class PagifyController<E> {
     ));
   }
 
-  //
-  void _notify(){
-    final List<E> list = List.from(_items.value);
-    _items.value = list;
-    // items.notifyListeners();
-  }
+  void _makeActionOnDataChanging() => AsyncCallStatusInterceptor.instance.updateAllStatues(PagifyAsyncCallStatus.success);
 
   void _updateItems({
     required List<E> newItems,
@@ -52,7 +44,6 @@ class PagifyController<E> {
         _items.value.addAll(newItems);
         break;
     }
-    _notify();
   }
 
   E? getRandomItem() {
@@ -67,40 +58,28 @@ class PagifyController<E> {
 
   void filterAndUpdate(bool Function(E item) condition) {
     _items.value = List.from(filter(condition));
-    _notify();
+    _makeActionOnDataChanging();
   }
 
 
   void sort(int Function(E a, E b) compare) {
     _items.value.sort(compare);
-    _notify();
-  }
-
-  void _executeWholeRefresh(){
-    _needToRefresh.value = !_needToRefresh.value;
-  }
-
-  void _checkAndNotify(bool Function() condition){
-    if(condition.call()){
-      _executeWholeRefresh();
-    }else{
-      _notify();
-    }
+    _makeActionOnDataChanging();
   }
 
   void addItem(E item) {
     _items.value.add(item);
-    _checkAndNotify(() => _items.value.length == 1);
+    _makeActionOnDataChanging();
   }
 
   void addItemAt(int index, E item) {
     _items.value.insert(index, item);
-    _checkAndNotify(() => _items.value.length == 1);
+    _makeActionOnDataChanging();
   }
 
   void addAtBeginning(E item) {
     _items.value.insert(0, item);
-    _checkAndNotify(() => _items.value.length == 1);
+    _makeActionOnDataChanging();
   }
 
   E? accessElement(int index) {
@@ -109,27 +88,27 @@ class PagifyController<E> {
 
   void replaceWith(int oldItemIndex, E item) {
     _items.value[oldItemIndex] = item;
-    _notify();
+    _makeActionOnDataChanging();
   }
 
   void removeItem(E item) {
     _items.value.remove(item);
-    _checkAndNotify(() => _items.value.isEmpty);
+    _makeActionOnDataChanging();
   }
 
   void removeAt(int index){
     _items.value.removeAt(index);
-    _checkAndNotify(() => _items.value.isEmpty);
+    _makeActionOnDataChanging();
   }
 
   void removeWhere(bool Function(E item) condition){
     _items.value.removeWhere(condition);
-    _checkAndNotify(() => _items.value.isEmpty);
+    _makeActionOnDataChanging();
   }
 
   void clear() {
     _items.value.clear();
-    _notify();
+    _makeActionOnDataChanging();
   }
 
   void dispose() {
