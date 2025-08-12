@@ -535,13 +535,49 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     return ValueListenableBuilder(
       valueListenable: widget.controller._needToRefresh,
       builder: (context, value, child) =>
-      StreamBuilder<PagifyAsyncCallStatus>(
-        stream: asyncCallState.listenStatusChanges,
-        builder: (context, snapshot) =>
-        snapshot.data!.isError || snapshot.data!.isNetworkError?
-        _buildErrorWidget : asyncCallState.currentState.isLoading?
-        _buildLoadingView : _buildSuccessWidget,
-      ),
+          StreamBuilder<PagifyAsyncCallStatus>(
+              stream: asyncCallState.listenStatusChanges,
+              builder: (context, snapshot) => SnapshotHandler(
+                snapshot: snapshot,
+                loadingWidget: _loadingWidget,
+                activeStateCallBack: (snapshot) => snapshot.hasData?
+                snapshot.data!.isError || snapshot.data!.isNetworkError?
+                _buildErrorWidget : asyncCallState.currentState.isLoading?
+                _buildLoadingView : _buildSuccessWidget : AppText('the stream throws an exception'),
+              )
+          ),
     );
+  }
+}
+
+class SnapshotHandler extends StatelessWidget {
+  final AsyncSnapshot<PagifyAsyncCallStatus> snapshot;
+  final Widget loadingWidget;
+  final Widget Function(AsyncSnapshot<PagifyAsyncCallStatus> snapshot) activeStateCallBack;
+
+
+  const SnapshotHandler({super.key,
+    required this.snapshot,
+    required this.loadingWidget,
+    required this.activeStateCallBack
+  });
+
+  Widget get _checkStreamStatesAndBuildView{
+    switch(snapshot.connectionState){
+      case ConnectionState.waiting:
+        return loadingWidget;
+
+      case ConnectionState.none:
+        return AppText('no stream connection!');
+
+
+      default:
+        return activeStateCallBack.call(snapshot);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _checkStreamStatesAndBuildView;
   }
 }
