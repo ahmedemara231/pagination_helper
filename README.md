@@ -20,7 +20,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  pagify: ^0.0.3
+  pagify: ^0.0.6
 ```
 
 Then run:
@@ -315,16 +315,16 @@ Pagify.listView(
   // ... other parameters
   onUpdateStatus: (status) {
     switch (status) {
-      case AsyncCallStatus.loading:
+      case PagifyAsyncCallStatus.loading:
         // Show loading indicator in app bar
         break;
-      case AsyncCallStatus.error:
+      case PagifyAsyncCallStatus.error:
         // Show error snackbar
         break;
-      case AsyncCallStatus.networkError:
+      case PagifyAsyncCallStatus.networkError:
         // Show network error dialog
         break;
-      case AsyncCallStatus.success:
+      case PagifyAsyncCallStatus.success:
         // Hide any error states
         break;
     }
