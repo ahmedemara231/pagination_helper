@@ -17,36 +17,93 @@ import 'helpers/scroll_controller.dart';
 import 'helpers/status_stream.dart';
 part 'helpers/controller.dart';
 
-enum RankingType {gridView, listView}
 
-// Response is full response which includes data list and pagination data
-// Model is specific model is the list
+/// Defines the type of list ranking to use in [Pagify].
+enum RankingType {
+  /// Displays items in a [GridView].
+  gridView,
+
+  /// Displays items in a [ListView].
+  listView
+}
+
+
+/// [Response] is the type of the API response.
+/// [Model] is the type of each data item in the list.
 class Pagify<Response, Model> extends StatefulWidget {
+  /// Called whenever the async call status changes.
   final FutureOr<void> Function(PagifyAsyncCallStatus status)? onUpdateStatus;
+
+  /// Whether the list should be displayed in reverse order.
   final bool isReverse;
+
+  /// Whether to show a "No Data" alert when no data is available.
   final bool showNoDataAlert;
+
+  /// Determines the layout type (grid or list).
   final RankingType rankingType;
+
+  /// Background color of the refresh indicator.
   final Color? refreshIndicatorBackgroundColor;
+
+  /// Color of the refresh indicator.
   final Color? refreshIndicatorColor;
+
+  /// Maps network and HTTP errors to messages.
   final ErrorMapper errorMapper;
+
+  /// Callback fired before an async call starts loading.
   final FutureOr<void> Function()? onLoading;
+
+  /// Callback fired when data is successfully fetched.
   final FutureOr<void> Function(int currentPage, List<Model> data)? onSuccess;
+
+  /// Callback fired when an error occurs while fetching data.
   final FutureOr<void> Function(int currentPage, String errorMessage)? onError;
+
+  /// The asynchronous API call to fetch paginated data.
   final Future<Response> Function(int currentPage) asyncCall;
+
+  /// Maps the API [Response] to a [PagifyData] object containing items and pagination info.
   final PagifyData<Model> Function(Response response) mapper;
+
+  /// Builds each list/grid item widget.
   final Widget Function(List<Model> data, int index, Model element) itemBuilder;
+
+  /// Custom loading widget to display while fetching data.
   final Widget? loadingBuilder;
+
+  /// Custom widget to display when an error occurs.
   final Widget Function(String errorMsg)? errorBuilder;
+
+  /// Controller for interacting with the pagination state.
   final PagifyController<Model> controller;
+
+  /// Scroll direction for the list/grid.
   final Axis? scrollDirection;
+
+  /// Whether the list/grid should shrink-wrap its contents.
   final bool? shrinkWrap;
+
+  /// Spacing between rows in [GridView].
   final double? mainAxisSpacing;
+
+  /// Spacing between columns in [GridView].
   final double? crossAxisSpacing;
+
+  /// Aspect ratio for each child in [GridView].
   final double? childAspectRatio;
+
+  /// Number of columns in [GridView].
   final int? crossAxisCount;
+
+  /// Text to display when there is no internet connection.
   final String? noConnectionText;
+
+  /// Text to display when the list is empty.
   final String? emptyListText;
 
+  /// Creates a paginated widget with a [GridView] layout.
   Pagify.gridView({super.key,
     required this.controller,
     required this.asyncCall,
@@ -73,6 +130,7 @@ class Pagify<Response, Model> extends StatefulWidget {
   }) : rankingType = RankingType.gridView, shrinkWrap = true,
         assert(errorMapper.errorWhenHttp != null || errorMapper.errorWhenDio != null);
 
+  /// Creates a paginated widget with a [listView] layout.
   Pagify.listView({super.key,
     required this.controller,
     required this.asyncCall,
@@ -544,12 +602,21 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
   }
 }
 
+
+/// A widget that wraps a [StreamBuilder] to handle [PagifyAsyncCallStatus]
+/// and render the appropriate UI state (loading, error, or success).
 class SnapshotHandler extends StatelessWidget {
+
+  /// Snapshot from the [StreamBuilder] containing pagination state.
   final AsyncSnapshot<PagifyAsyncCallStatus> snapshot;
+  /// Widget to display while loading.
   final Widget loadingWidget;
+
+  /// Callback to build the active UI state when the stream has data.
   final Widget Function(AsyncSnapshot<PagifyAsyncCallStatus> snapshot) activeStateCallBack;
 
 
+  /// Creates a snapshot handler for managing async call UI states.
   const SnapshotHandler({super.key,
     required this.snapshot,
     required this.loadingWidget,

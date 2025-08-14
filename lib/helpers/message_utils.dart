@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
+/// Helper class to show toast messages.
 class MessageUtils {
+
+  /// Shows a simple toast message.
   static void showSimpleToast({
     required String msg,
     Color? color,

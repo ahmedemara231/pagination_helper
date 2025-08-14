@@ -2,8 +2,15 @@
 class Assets {
   Assets._();
 
+  /// Lottie files [ApiError]
   static const String lottieApiError = 'assets/lottie/api_error.json';
+
+  /// Lottie files [Error]
   static const String lottieError = 'assets/lottie/error.json';
+
+  /// Lottie files [NoData]
   static const String lottieNoData = 'assets/lottie/no_data.json';
+
+  /// Lottie files [NoInternet]
   static const String lottieNoInternet = 'assets/lottie/no_internet.json';
 }

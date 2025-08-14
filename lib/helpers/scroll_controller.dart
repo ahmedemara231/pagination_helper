@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
+
+/// pagify scroll controller
 class RetainableScrollController extends ScrollController {
+
+  /// pagify scroll controller construntor
   RetainableScrollController({
     super.initialScrollOffset,
     super.keepScrollOffset,
@@ -9,6 +13,7 @@ class RetainableScrollController extends ScrollController {
 
   double? _currentOffset;
 
+  /// retain scroll offset before request
   void retainOffset() { // before request
     if (hasClients) {
       _currentOffset = offset; // position.pixels
@@ -16,6 +21,7 @@ class RetainableScrollController extends ScrollController {
   }
 
 
+  /// restore scroll offset after request
   void restoreOffset({
     required bool isReverse,
     required List subList,
