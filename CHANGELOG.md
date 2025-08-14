@@ -1,4 +1,4 @@
-## 0.0.7
+## 0.0.8
 
 * Added support for both ListView and GridView implementations
 * Implemented comprehensive error handling for network operations
@@ -9,3 +9,4 @@
 * Fixed minor UI inconsistencies in the widget rendering
 * handed network status with stream
 * change controller and main class updating structure
+* fully documented structured
