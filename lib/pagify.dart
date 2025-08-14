@@ -43,11 +43,11 @@ class Pagify<Response, Model> extends StatefulWidget {
   /// Determines the layout type (grid or list).
   final RankingType rankingType;
 
-  /// Background color of the refresh indicator.
-  final Color? refreshIndicatorBackgroundColor;
-
-  /// Color of the refresh indicator.
-  final Color? refreshIndicatorColor;
+  // /// Background color of the refresh indicator.
+  // final Color? refreshIndicatorBackgroundColor;
+  //
+  // /// Color of the refresh indicator.
+  // final Color? refreshIndicatorColor;
 
   /// Maps network and HTTP errors to messages.
   final ErrorMapper errorMapper;
@@ -116,8 +116,8 @@ class Pagify<Response, Model> extends StatefulWidget {
     this.onSuccess,
     this.onError,
     this.showNoDataAlert = false,
-    this.refreshIndicatorBackgroundColor,
-    this.refreshIndicatorColor,
+    // this.refreshIndicatorBackgroundColor,
+    // this.refreshIndicatorColor,
     this.loadingBuilder,
     this.errorBuilder,
     this.mainAxisSpacing,
@@ -143,8 +143,8 @@ class Pagify<Response, Model> extends StatefulWidget {
     this.onSuccess,
     this.onError,
     this.showNoDataAlert = false,
-    this.refreshIndicatorBackgroundColor,
-    this.refreshIndicatorColor,
+    // this.refreshIndicatorBackgroundColor,
+    // this.refreshIndicatorColor,
     this.loadingBuilder,
     this.errorBuilder,
     this.shrinkWrap,
