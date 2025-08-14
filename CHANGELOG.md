@@ -1,4 +1,4 @@
-## 0.0.6
+## 0.0.7
 
 * Added support for both ListView and GridView implementations
 * Implemented comprehensive error handling for network operations
