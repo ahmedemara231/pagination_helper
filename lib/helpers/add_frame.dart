@@ -6,7 +6,7 @@ class Frame {
   /// add flutter frame before build
   static void addBefore(FutureOr Function() function) {
     WidgetsBinding.instance.addPostFrameCallback(
-          (timeStamp) async => await function(),
+      (timeStamp) async => await function(),
     );
   }
 }

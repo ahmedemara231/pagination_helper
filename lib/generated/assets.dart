@@ -5,7 +5,7 @@ class Assets {
   /// Lottie files [ApiError]
   static const String lottieApiError = 'assets/lottie/api_error.json';
 
-  /// Lottie files [Error]
+  /// Lottie files [Error]/
   static const String lottieError = 'assets/lottie/error.json';
 
   /// Lottie files [NoData]
