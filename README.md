@@ -20,7 +20,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  pagify: ^0.0.6
+  pagify: ^0.0.8
 ```
 
 Then run:
