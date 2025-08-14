@@ -107,14 +107,15 @@ class Pagify<Response, Model> extends StatefulWidget {
 
 class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
   late RetainableScrollController _scrollController;
-  AsyncCallStatusInterceptor asyncCallState = AsyncCallStatusInterceptor.instance;
-  int _currentPage = 1;
+  late AsyncCallStatusInterceptor asyncCallState;
   late int _totalPages;
+  int _currentPage = 1;
   StreamSubscription<PagifyAsyncCallStatus>? _statusSubscription;
 
   @override
   void initState() {
     super.initState();
+    asyncCallState = AsyncCallStatusInterceptor.instance;
     _scrollController = RetainableScrollController();
     _scrollController.addListener(() => _onScroll());
     _listenToNetworkChanges();

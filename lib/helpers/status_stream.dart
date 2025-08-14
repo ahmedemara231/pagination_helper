@@ -68,5 +68,6 @@ class AsyncCallStatusInterceptor{
 
   void dispose(){
     _controller.close();
+    _instance = null;
   }
 }
