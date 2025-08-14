@@ -32,16 +32,16 @@ class _PagifyExampleState extends State<PagifyExample> {
   }
 
   //
-  late PagifyController<String> _PagifyController;
+  late PagifyController<String> _pagifyController;
   @override
   void initState() {
-    _PagifyController = PagifyController<String>();
+    _pagifyController = PagifyController<String>();
     super.initState();
   }
 
   @override
   void dispose() {
-    _PagifyController.dispose();
+    _pagifyController.dispose();
     super.dispose();
   }
   @override
@@ -54,7 +54,7 @@ class _PagifyExampleState extends State<PagifyExample> {
           childAspectRatio: 2,
           mainAxisSpacing: 10,
           crossAxisCount: 12,
-          controller: _PagifyController,
+          controller: _pagifyController,
           asyncCall: (page)async => await _fetchData(page),
           mapper: (response) => PagifyData(
               data: response.items,
