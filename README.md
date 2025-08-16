@@ -8,6 +8,8 @@
 
 A powerful and flexible Flutter package for implementing pagination with both ListView and GridView support. This package handles infinite scrolling, pull-to-refresh, loading states, error handling, and network connectivity checks automatically.
 
+https://github.com/user-attachments/assets/7c84fe5d-e634-4fc7-b1a4-05e7037aa72b
+
 ## 🚀 Features
 
 - ✅ **Dual View Support**: Both ListView and GridView implementations
