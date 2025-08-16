@@ -10,11 +10,11 @@ A powerful and flexible Flutter package for implementing pagination with both Li
 
 - ✅ **normal pagination**:
   
-https://github.com/user-attachments/assets/7c84fe5d-e634-4fc7-b1a4-05e7037aa72b
+![Image](https://github.com/user-attachments/assets/b87c7a71-6495-4376-b1af-58c56bdd500b)
 
 - ✅ **reverse pagination**:
   
-https://github.com/user-attachments/assets/1877e5ce-ca7a-48a0-961a-492c684eeb91
+![Image](https://github.com/user-attachments/assets/893daf9e-2bf9-410c-a075-b70941065f8c)
 
 ## 🚀 Features
 
