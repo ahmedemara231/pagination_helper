@@ -437,8 +437,9 @@ If you have any questions or need help with implementation, please [open an issu
 
 ## ⭐ Show Your Support
 
-If this package helped you, please give it a ⭐ on [GitHub](https://github.com/ahmedemara231/pagination_helper) and like it on [pub.dev](https://pub.dev/packages/easy_pagination)!
+If this package helped you, please give it a ⭐ on [GitHub](https://github.com/ahmedemara231/pagination_helper) and like it on [pub.dev](https://pub.dev/packages/pagify)!
 
 ---
 
 Made with ❤️ by [Ahmed Emara](https://github.com/ahmedemara231)
+[linkedIn](https://www.linkedin.com/in/ahmed-emara-11550526a/)
