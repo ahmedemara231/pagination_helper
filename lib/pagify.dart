@@ -43,32 +43,26 @@ class Pagify<Response, Model> extends StatefulWidget {
   /// Determines the layout type (grid or list).
   final RankingType rankingType;
 
-  // /// Background color of the refresh indicator.
-  // final Color? refreshIndicatorBackgroundColor;
-  //
-  // /// Color of the refresh indicator.
-  // final Color? refreshIndicatorColor;
-
   /// Maps network and HTTP errors to messages.
-  final ErrorMapper errorMapper;
+  final PagifyErrorMapper errorMapper;
 
   /// Callback fired before an async call starts loading.
   final FutureOr<void> Function()? onLoading;
 
   /// Callback fired when data is successfully fetched.
-  final FutureOr<void> Function(int currentPage, List<Model> data)? onSuccess;
+  final FutureOr<void> Function(BuildContext context, List<Model> data)? onSuccess;
 
   /// Callback fired when an error occurs while fetching data.
-  final FutureOr<void> Function(int currentPage, String errorMessage)? onError;
+  final FutureOr<void> Function(BuildContext context, int currentPage, PagifyException exception)? onError;
 
   /// The asynchronous API call to fetch paginated data.
-  final Future<Response> Function(int currentPage) asyncCall;
+  final Future<Response> Function(BuildContext context, int currentPage) asyncCall;
 
   /// Maps the API [Response] to a [PagifyData] object containing items and pagination info.
   final PagifyData<Model> Function(Response response) mapper;
 
   /// Builds each list/grid item widget.
-  final Widget Function(List<Model> data, int index, Model element) itemBuilder;
+  final Widget Function(BuildContext context, List<Model> data, int index, Model element) itemBuilder;
 
   /// Custom loading widget to display while fetching data.
   final Widget? loadingBuilder;
@@ -116,8 +110,6 @@ class Pagify<Response, Model> extends StatefulWidget {
     this.onSuccess,
     this.onError,
     this.showNoDataAlert = false,
-    // this.refreshIndicatorBackgroundColor,
-    // this.refreshIndicatorColor,
     this.loadingBuilder,
     this.errorBuilder,
     this.mainAxisSpacing,
@@ -143,8 +135,6 @@ class Pagify<Response, Model> extends StatefulWidget {
     this.onSuccess,
     this.onError,
     this.showNoDataAlert = false,
-    // this.refreshIndicatorBackgroundColor,
-    // this.refreshIndicatorColor,
     this.loadingBuilder,
     this.errorBuilder,
     this.shrinkWrap,
@@ -203,13 +193,13 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     }
   }
 
-  FutureOr<void> _errorHandler(Exception e){
-    dev.log('enter error handler');
-    _logError(e);
-    widget.onError?.call(_currentPage, _errorMsg);
+  PagifyException _getPagifyException(PagifyException e) => e;
 
-    if(e is PaginationNetworkError){
+  FutureOr<void> _errorHandler(Exception e){
+    final PagifyException pagifyException;
+    if(e is PagifyNetworkException){
       asyncCallState.updateAllStatues(PagifyAsyncCallStatus.networkError);
+      pagifyException = _getPagifyException(e);
     }else{
       asyncCallState.updateAllStatues(PagifyAsyncCallStatus.error);
       if(e is DioException){
@@ -221,23 +211,13 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
       }else{
         _errorMsg = 'There is error occur $e';
       }
+
+      pagifyException = _getPagifyException(ApiRequestException(_errorMsg));
     }
+
+    _logError(e);
+    widget.onError?.call(context, _currentPage, pagifyException);
   }
-
-
-  // Future<void> _onScroll({bool isRefresh = false}) async{
-  //   try {
-  //     if(isRefresh){
-  //       await _fetchDataFirstTimeOrRefresh();
-  //     }else{
-  //       await _startScrolling();
-  //     }
-  //   } on Exception catch(e){
-  //     dev.log('_fetchDataFirstTimeOrRefresh error handling');
-  //     _errorHandler(e);
-  //   }
-  // }
-
 
   Future<void> _onScroll() async{
     try {
@@ -282,7 +262,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     await _fetchDataAndMapping(
         whenEnd: (mapperResult) async{
           onUpdate(mapperResult.data);
-          await widget.onSuccess?.call(_currentPage, _itemsList);
+          await widget.onSuccess?.call(context, _itemsList);
           _scrollController.restoreOffset(
               isReverse: widget.isReverse,
               subList: mapperResult.data,
@@ -335,16 +315,16 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     }
   }
 
-  Future<Response> _callApi(Future<Response> Function(int currentPage) asyncCall)async{
+  Future<Response> _callApi(Future<Response> Function(BuildContext context, int currentPage) asyncCall)async{
     late final Response waitingResult;
     final connectivityResult = await _connectivity.checkConnectivity();
     await _checkAndMake(
         connectivityResult: connectivityResult,
         onConnected: () async{
-          final Response result = await asyncCall(_currentPage);
+          final Response result = await asyncCall(context, _currentPage);
           waitingResult = result;
         },
-        onDisconnected: () => throw PaginationNetworkError(widget.noConnectionText?? 'Check your internet connection')
+        onDisconnected: () => throw PagifyNetworkException(widget.noConnectionText?? 'Check your internet connection')
     );
 
     return waitingResult;
@@ -357,9 +337,14 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
       if(isInitialized){
         _checkAndMake(
             connectivityResult: networkStatus,
-            onConnected: () => setState(() => asyncCallState.setLastStatusAsCurrent(
-                ifLastIsLoading: () async => await _fetchDataFirstTimeOrRefresh()
-            )),
+            onConnected: () {
+              MessageUtils.showSimpleToast(msg: 'the internet connection is restored', color: Colors.green);
+              asyncCallState.setLastStatusAsCurrent(
+                ifLastIsLoading: () async => _currentPage == 1?
+                await _fetchDataFirstTimeOrRefresh() :
+                await _onScroll(),
+              );
+            },
             onDisconnected: () => asyncCallState.updateAllStatues(PagifyAsyncCallStatus.networkError)
         );
       }
@@ -371,15 +356,15 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
   Future<void> _fetchDataFirstTimeOrRefresh() async {
     try {
       await _fetchDataAndMapping(
-          whenStart: () {
-            if(_currentPage > 1 && _itemsIsNotEmpty){
-              _resetDataWhenRefresh();
-            }
-          },
+          // whenStart: () {
+          //   if(_currentPage > 1 && _itemsIsNotEmpty){
+          //     _resetDataWhenRefresh();
+          //   }
+          // },
           whenEnd: (mapperResult) async{
             widget.controller._updateItems(newItems: mapperResult.data);
             widget.controller._initScrollController(_scrollController);
-            await widget.onSuccess?.call(_currentPage, _itemsList);
+            await widget.onSuccess?.call(context, _itemsList);
             if(widget.isReverse){
               Frame.addBefore(() => _scrollDownWhileGetDataFirstTimeWhenReverse());
             }
@@ -398,10 +383,10 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     }
   }
 
-  void _resetDataWhenRefresh() {
-    _currentPage = 1;
-    _itemsList.clear();
-  }
+  // void _resetDataWhenRefresh() {
+  //   _currentPage = 1;
+  //   _itemsList.clear();
+  // }
 
   Widget _listRanking(){
     if(widget.rankingType == RankingType.gridView){
@@ -429,7 +414,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
 
   Widget _buildItemBuilder({required int index, required List<Model> value}){
     if (index < value.length) {
-      return widget.itemBuilder(value, index, value[index]);
+      return widget.itemBuilder(context, value, index, value[index]);
     } else {
       return _buildExtraItemSuchNoMoreDataOrLoading();
     }
@@ -441,7 +426,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     }
 
     int dataIndex = (_shouldShowLoading || _shouldShowNoData) ? index - 1 : index;
-    return widget.itemBuilder(value, dataIndex, value[dataIndex]);
+    return widget.itemBuilder(context, value, dataIndex, value[dataIndex]);
   }
 
   int _buildItemCount(List<Model> value){
@@ -487,7 +472,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
             physics: const NeverScrollableScrollPhysics(),
             children: List.generate(
               _itemsList.length,
-                  (index) => widget.itemBuilder(_itemsList, index, _itemsList[index]),
+                  (index) => widget.itemBuilder(context, _itemsList, index, _itemsList[index]),
             ),
           ),
           if(!widget.isReverse)
@@ -496,7 +481,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
       ),
     );
   }
-  List<Model> get _itemsList => widget.controller._items.value;
+  List<Model> get _itemsList => List.from(widget.controller._items.value);
   bool get _itemsIsNotEmpty => _itemsList.isNotEmpty;
   bool get _itemsIsEmpty => _itemsList.isEmpty;
 
@@ -523,11 +508,11 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
 
   Widget get _buildErrorWidget{
     if(_itemsIsNotEmpty){
-      if(asyncCallState.currentState.isNetworkError){
-        MessageUtils. showSimpleToast(msg: widget.noConnectionText?? 'Check your internet connection', color: Colors.red);
-      }else{
-        MessageUtils.showSimpleToast(msg: _errorMsg, color: Colors.red);
-      }
+      // if(asyncCallState.currentState.isNetworkError){
+      //   MessageUtils. showSimpleToast(msg: widget.noConnectionText?? 'Check your internet connection', color: Colors.red);
+      // }else{
+      //   MessageUtils.showSimpleToast(msg: _errorMsg, color: Colors.red);
+      // }
       return _listRanking();
     }else{
       if(asyncCallState.currentState.isNetworkError){

@@ -2,25 +2,33 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 
 /// official Pagify [Exception]
-class PagifyError implements Exception{
+class PagifyException implements Exception{
 
   /// the constructor which accepts a [String] message
   final String msg;
 
   /// the constructor which accepts a [String] message
-  PagifyError(this.msg);
+  PagifyException(this.msg);
 }
 
 /// network [Exception] happens when there is no internet connection
-class PaginationNetworkError extends PagifyError{
+class PagifyNetworkException extends PagifyException{
 
   /// the constructor which accepts a [String] message
-  PaginationNetworkError(super.msg);
+  PagifyNetworkException(super.msg);
+}
+
+
+/// api request [Exception] happens when there is request exception like [DioException]
+class ApiRequestException extends PagifyException{
+
+  /// the constructor which accepts a [String] message
+  ApiRequestException(super.msg);
 }
 
 
 /// error mapper which extract the api [Exception] message
-class ErrorMapper{
+class PagifyErrorMapper{
 
   /// [Dio] Package error mapper which extract the [DioException] message
   String Function(DioException e)? errorWhenDio;
@@ -29,5 +37,5 @@ class ErrorMapper{
   String Function(HttpException e)? errorWhenHttp;
 
   /// the constructor which accepts two [Function]
-  ErrorMapper({this.errorWhenDio, this.errorWhenHttp});
+  PagifyErrorMapper({this.errorWhenDio, this.errorWhenHttp});
 }

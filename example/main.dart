@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:pagify/helpers/data_and_pagination_data.dart';
 import 'package:pagify/helpers/errors.dart';
@@ -51,11 +53,25 @@ class _PagifyExampleState extends State<PagifyExample> {
       home: Scaffold(
         appBar: AppBar(title: const Text('Example Usage')),
         body: Pagify<ExampleModel, String>.gridView(
+          onLoading: () => log('loading now ...!'),
+          onSuccess: (context, data) => log('the data is ready $data'),
+          onError: (context, page, e) {
+            log('page : $page');
+            if(e is PagifyNetworkException){
+              log('check your internet connection');
+
+            }else if(e is ApiRequestException){
+              log('check your server ${e.msg}');
+
+            }else{
+              log('other error ...!');
+            }
+          },
           childAspectRatio: 2,
           mainAxisSpacing: 10,
           crossAxisCount: 12,
           controller: _pagifyController,
-          asyncCall: (page)async => await _fetchData(page),
+          asyncCall: (context, page)async => await _fetchData(page),
           mapper: (response) => PagifyData(
               data: response.items,
               paginationData: PaginationData(
@@ -63,11 +79,11 @@ class _PagifyExampleState extends State<PagifyExample> {
                 perPage: 10,
               )
           ),
-          errorMapper: ErrorMapper(
+          errorMapper: PagifyErrorMapper(
             errorWhenDio: (e) => e.response?.data['errorMsg'], // if you using Dio
             errorWhenHttp: (e) => e.message, // if you using Http
           ),
-          itemBuilder: (data, index, element) => Text(data[index])
+          itemBuilder: (context, data, index, element) => Text(element)
         )
       ),
     );
