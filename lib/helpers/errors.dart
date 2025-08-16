@@ -2,8 +2,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 
 /// official Pagify [Exception]
-class PagifyException implements Exception{
-
+class PagifyException implements Exception {
   /// the constructor which accepts a [String] message
   final String msg;
 
@@ -12,24 +11,19 @@ class PagifyException implements Exception{
 }
 
 /// network [Exception] happens when there is no internet connection
-class PagifyNetworkException extends PagifyException{
-
+class PagifyNetworkException extends PagifyException {
   /// the constructor which accepts a [String] message
   PagifyNetworkException(super.msg);
 }
 
-
 /// api request [Exception] happens when there is request exception like [DioException]
-class ApiRequestException extends PagifyException{
-
+class ApiRequestException extends PagifyException {
   /// the constructor which accepts a [String] message
   ApiRequestException(super.msg);
 }
 
-
 /// error mapper which extract the api [Exception] message
-class PagifyErrorMapper{
-
+class PagifyErrorMapper {
   /// [Dio] Package error mapper which extract the [DioException] message
   String Function(DioException e)? errorWhenDio;
 

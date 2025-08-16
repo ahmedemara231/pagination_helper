@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 
-
 /// pagify scroll controller
 class RetainableScrollController extends ScrollController {
-
   /// pagify scroll controller construntor
   RetainableScrollController({
     super.initialScrollOffset,
@@ -14,25 +12,23 @@ class RetainableScrollController extends ScrollController {
   double? _currentOffset;
 
   /// retain scroll offset before request
-  void retainOffset() { // before request
+  void retainOffset() {
+    // before request
     if (hasClients) {
       _currentOffset = offset; // position.pixels
     }
   }
 
-
   /// restore scroll offset after request
-  void restoreOffset({
-    required bool isReverse,
-    required List subList,
-    required int totalCurrentItems
-  }) { // after request
+  void restoreOffset(
+      {required bool isReverse,
+      required List subList,
+      required int totalCurrentItems}) {
+    // after request
     if (_currentOffset != null && hasClients) {
-      jumpTo(
-          isReverse?
-          _getSubListHeight(subList, totalCurrentItems) :
-          _currentOffset!
-      );
+      jumpTo(isReverse
+          ? _getSubListHeight(subList, totalCurrentItems)
+          : _currentOffset!);
     }
   }
 
@@ -43,8 +39,8 @@ class RetainableScrollController extends ScrollController {
     }
 
     // Calculate average item height from current list
-    double totalContentHeight = position.maxScrollExtent +
-        position.viewportDimension;
+    double totalContentHeight =
+        position.maxScrollExtent + position.viewportDimension;
     double averageItemHeight = totalContentHeight / totalCurrentItems;
 
     return subList.length * averageItemHeight;

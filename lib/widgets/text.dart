@@ -28,16 +28,16 @@ class AppText extends StatelessWidget {
 
   /// pagify text widget constructor
   const AppText(
-      this.text, {
-        super.key,
-        this.color,
-        this.fontSize,
-        this.fontWeight = FontWeight.normal,
-        this.overflow,
-        this.textAlign = TextAlign.start,
-        this.maxLines,
-        this.height,
-      });
+    this.text, {
+    super.key,
+    this.color,
+    this.fontSize,
+    this.fontWeight = FontWeight.normal,
+    this.overflow,
+    this.textAlign = TextAlign.start,
+    this.maxLines,
+    this.height,
+  });
 
   @override
   Widget build(BuildContext context) {

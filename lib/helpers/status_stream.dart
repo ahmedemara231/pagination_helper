@@ -33,15 +33,14 @@ extension AsyncCallStatusExtension on PagifyAsyncCallStatus {
   bool get isSuccess => this == PagifyAsyncCallStatus.success;
 }
 
-
 /// A singleton service that manages and broadcasts updates
 /// to the current [PagifyAsyncCallStatus].
 ///
 /// This class is used by [Pagify] to keep track of and notify
 /// listeners when the API call status changes.
-class AsyncCallStatusInterceptor{
-
+class AsyncCallStatusInterceptor {
   static AsyncCallStatusInterceptor? _instance;
+
   /// Returns the singleton instance of [AsyncCallStatusInterceptor].
   static AsyncCallStatusInterceptor get instance =>
       _instance ??= AsyncCallStatusInterceptor();
@@ -63,10 +62,9 @@ class AsyncCallStatusInterceptor{
   }
 
   /// Creates a new [AsyncCallStatusInterceptor] and initializes it.
-  AsyncCallStatusInterceptor(){
+  AsyncCallStatusInterceptor() {
     _init();
   }
-
 
   /// Updates both the current and last statuses.
   void updateAllStatues(PagifyAsyncCallStatus newStatus) {
@@ -100,7 +98,6 @@ class AsyncCallStatusInterceptor{
       updateStatus(lastStateBeforeNetworkError);
     }
   }
-
 
   /// Returns the broadcast stream of status changes.
   Stream<PagifyAsyncCallStatus> get stream => _controller.stream;
