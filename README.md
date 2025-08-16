@@ -1,11 +1,18 @@
-# Pagify
+# Pagination Helper
+
+[![pub package](https://img.shields.io/pub/v/easy_pagination.svg)](https://pub.dev/packages/easy_pagination)
+[![GitHub stars](https://img.shields.io/github/stars/ahmedemara231/pagination_helper.svg?style=social&label=Star)](https://github.com/ahmedemara231/pagination_helper)
+[![GitHub forks](https://img.shields.io/github/forks/ahmedemara231/pagination_helper.svg?style=social&label=Fork)](https://github.com/ahmedemara231/pagination_helper/fork)
+[![GitHub issues](https://img.shields.io/github/issues/ahmedemara231/pagination_helper.svg)](https://github.com/ahmedemara231/pagination_helper/issues)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A powerful and flexible Flutter package for implementing pagination with both ListView and GridView support. This package handles infinite scrolling, pull-to-refresh, loading states, error handling, and network connectivity checks automatically.
 
-## Features
+## 🚀 Features
 
 - ✅ **Dual View Support**: Both ListView and GridView implementations
 - ✅ **Infinite Scrolling**: Automatic loading of next pages when scrolling reaches the end
+- ✅ **Pull-to-Refresh**: Built-in refresh indicator support
 - ✅ **Network Awareness**: Automatic network connectivity checking
 - ✅ **Error Handling**: Comprehensive error handling for HTTP and Dio exceptions
 - ✅ **Loading States**: Customizable loading indicators and states
@@ -14,13 +21,13 @@ A powerful and flexible Flutter package for implementing pagination with both Li
 - ✅ **Customizable UI**: Custom error builders, loading widgets, and empty state messages
 - ✅ **Memory Efficient**: Optimized scroll position retention during data loading
 
-## Installation
+## 📦 Installation
 
 Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  pagify: ^0.0.8
+  easy_pagination: ^0.9.0
 ```
 
 Then run:
@@ -29,109 +36,158 @@ Then run:
 flutter pub get
 ```
 
-## Dependencies
+### Dependencies
 
 This package uses the following dependencies:
 - `connectivity_plus` - for network connectivity checking
-- `dio - http` (optional) - for enhanced HTTP error handling
+- `dio` (optional) - for enhanced HTTP error handling
+- `http` (optional) - for basic HTTP error handling
 - `lottie` (optional) - for default loading animations
 
-## Basic Usage
+## 🎯 Quick Start
 
-### ListView Implementation
+### Basic ListView Example
 
 ```dart
-class ExampleModel{
-  List<String> items;
-  int totalPages;
+import 'package:flutter/material.dart';
+import 'package:easy_pagination/easy_pagination.dart';
 
-  ExampleModel({
-    required this.items,
-    required this.totalPages
-  });
+class MyPaginatedList extends StatefulWidget {
+  @override
+  _MyPaginatedListState createState() => _MyPaginatedListState();
 }
 
-class PagifyExample extends StatefulWidget {
-  const PagifyExample({super.key});
+class _MyPaginatedListState extends State<MyPaginatedList> {
+  final EasyPaginationController<MyModel> controller = 
+      EasyPaginationController<MyModel>();
 
   @override
-  State<PagifyExample> createState() => _PagifyExampleState();
-}
-
-class _PagifyExampleState extends State<PagifyExample> {
-  Future<ExampleModel> _fetchData(int currentPage) async {
-    await Future.delayed(const Duration(seconds: 2)); // simulate api call with current page
-    final items = List.generate(25, (index) => 'Item $index');
-    return ExampleModel(items: items, totalPages: 4);
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Paginated List')),
+      body: EasyPagination.listView(
+        controller: controller,
+        asyncCall: (currentPage) => fetchData(currentPage),
+        mapper: (response) => DataListAndPaginationData(
+          data: response.items,
+          paginationData: PaginationData(
+            perPage: response.perPage,
+            totalPages: response.totalPages,
+          ),
+        ),
+        errorMapper: ErrorMapper(
+          errorWhenDio: (e) => "Network error: ${e.message}",
+          errorWhenHttp: (e) => "HTTP error: ${e.message}",
+        ),
+        itemBuilder: (data, index, item) => ListTile(
+          title: Text(item.title),
+          subtitle: Text(item.description),
+        ),
+      ),
+    );
   }
 
-  late PagifyController<String> _PagifyController;
-  @override
-  void initState() {
-    _PagifyController = PagifyController<String>();
-    super.initState();
+  Future<ApiResponse> fetchData(int page) async {
+    // Your API call implementation
+    final response = await apiService.getData(page: page);
+    return ApiResponse.fromJson(response.data);
   }
 
   @override
   void dispose() {
-    _PagifyController.dispose();
+    controller.dispose();
     super.dispose();
   }
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Awesome Button Example',
-      home: Scaffold(
-        appBar: AppBar(title: const Text('Example Usage')),
-        body: Pagify<ExampleModel, String>.listView(
-          controller: _PagifyController,
-          asyncCall: (page)async => await _fetchData(page),
-          mapper: (response) => PagifyData(
-              data: response.items,
-              paginationData: PaginationData(
-                totalPages: response.totalPages,
-                perPage: 10,
-              )
-          ),
-          errorMapper: ErrorMapper(
-            errorWhenDio: (e) => e.response?.data['errorMsg'], // if you using Dio
-            errorWhenHttp: (e) => e.message, // if you using Http
-          ),
-          itemBuilder: (data, index, element) => Text(data[index])
-        )
-      ),
-    );
-  }
 }
+```
 
-### GridView Implementation
+### GridView Example
 
 ```dart
-Pagify<ExampleModel, String>.gridView(
-          childAspectRatio: 2,
-          mainAxisSpacing: 10,
-          crossAxisCount: 12,
-          controller: _PagifyController,
-          asyncCall: (page)async => await _fetchData(page),
-          mapper: (response) => PagifyData(
-              data: response.items,
-              paginationData: PaginationData(
-                totalPages: response.totalPages,
-                perPage: 10,
-              )
-          ),
-          errorMapper: ErrorMapper(
-            errorWhenDio: (e) => e.response?.data['errorMsg'], // if you using Dio
-            errorWhenHttp: (e) => e.message, // if you using Http
-          ),
-          itemBuilder: (data, index, element) => Text(data[index])
-        )
+EasyPagination.gridView(
+  controller: controller,
+  crossAxisCount: 2,
+  childAspectRatio: 0.8,
+  mainAxisSpacing: 10.0,
+  crossAxisSpacing: 10.0,
+  asyncCall: (currentPage) => fetchData(currentPage),
+  mapper: (response) => DataListAndPaginationData(
+    data: response.items,
+    paginationData: PaginationData(
+      perPage: response.perPage,
+      totalPages: response.totalPages,
+    ),
+  ),
+  errorMapper: ErrorMapper(
+    errorWhenDio: (e) => "Error: ${e.message}",
+  ),
+  itemBuilder: (data, index, item) => Card(
+    child: Column(
+      children: [
+        Image.network(item.imageUrl),
+        Text(item.title),
+      ],
+    ),
+  ),
+)
+```
+
+## 🔧 Advanced Usage
+
+### Custom Error Handling
+
+```dart
+EasyPagination.listView(
+  // ... other parameters
+  errorMapper: ErrorMapper(
+    errorWhenDio: (DioException e) {
+      switch (e.type) {
+        case DioExceptionType.connectionTimeout:
+          return "Connection timeout. Please try again.";
+        case DioExceptionType.receiveTimeout:
+          return "Server response timeout.";
+        case DioExceptionType.badResponse:
+          return "Server error: ${e.response?.statusCode}";
+        default:
+          return "Network error occurred.";
+      }
+    },
+    errorWhenHttp: (HttpException e) => "HTTP Error: ${e.message}",
+  ),
+            onError: (context, page, e) {
+            log('page : $page');
+            if(e is PagifyNetworkException){
+              log('check your internet connection');
+
+            }else if(e is ApiRequestException){
+              log('check your server ${e.msg}');
+
+            }else{
+              log('other error ...!');
+            }
+          },
+
+  errorBuilder: (errorMsg) => Container(
+    padding: EdgeInsets.all(20),
+    child: Column(
+      children: [
+        Icon(Icons.error, color: Colors.red, size: 64),
+        SizedBox(height: 16),
+        Text(errorMsg, textAlign: TextAlign.center),
+        ElevatedButton(
+          onPressed: () => controller.refresh(),
+          child: Text('Retry'),
+        ),
+      ],
+    ),
+  ),
+)
 ```
 
 ### Custom Loading Widget
 
 ```dart
-Pagify<ExampleModel, String>.listView(
+EasyPagination.listView(
   // ... other parameters
   loadingBuilder: Container(
     height: 100,
@@ -149,10 +205,10 @@ Pagify<ExampleModel, String>.listView(
 )
 ```
 
-### Reverse Pagination (Chat-like Interface)
+### Reverse Pagination (Chat-like)
 
 ```dart
-Pagify<ExampleModel, String>.listView(
+EasyPagination.listView(
   controller: controller,
   isReverse: true, // Enable reverse pagination
   asyncCall: (currentPage) => fetchOlderMessages(currentPage),
@@ -167,12 +223,12 @@ Pagify<ExampleModel, String>.listView(
 )
 ```
 
-## Controller Methods
+## 🎮 Controller Methods
 
-The `PagifyController` provides various methods to programmatically control the pagination:
+The `EasyPaginationController` provides various methods to programmatically control the pagination:
 
 ```dart
-final controller = PagifyController<MyModel>();
+final controller = EasyPaginationController<MyModel>();
 
 // Add items
 controller.addItem(newItem);
@@ -207,22 +263,22 @@ controller.refresh();
 controller.clear();
 ```
 
-## Data Models
+## 📊 Data Models
 
-### Required Response Structure
-
-Your API response should be mappable to `PagifyData`:
+Your API response should be mappable to `DataListAndPaginationData`:
 
 ```dart
 class ApiResponse {
   final List<MyModel> items;
   final int perPage;
   final int totalPages;
+  final int currentPage;
 
   ApiResponse({
     required this.items,
     required this.perPage,
     required this.totalPages,
+    required this.currentPage,
   });
 
   factory ApiResponse.fromJson(Map<String, dynamic> json) {
@@ -234,11 +290,7 @@ class ApiResponse {
     );
   }
 }
-```
 
-### Model Example
-
-```dart
 class MyModel {
   final int id;
   final String title;
@@ -263,18 +315,18 @@ class MyModel {
 }
 ```
 
-## Configuration Parameters
+## 📋 API Reference
 
-### Pagify.listView Parameters
+### ListView Parameters
 
 | Parameter | Type | Description | Required |
 |-----------|------|-------------|----------|
-| `controller` | `PagifyController<Model>` | Controller for managing pagination state | ✅ |
+| `controller` | `EasyPaginationController<Model>` | Controller for managing pagination state | ✅ |
 | `asyncCall` | `Future<Response> Function(int currentPage)` | Function to fetch data for given page | ✅ |
-| `mapper` | `PagifyControllerData<Model> Function(Response)` | Maps API response to required format | ✅ |
+| `mapper` | `DataListAndPaginationData<Model> Function(Response)` | Maps API response to required format | ✅ |
 | `errorMapper` | `ErrorMapper` | Handles different types of errors | ✅ |
 | `itemBuilder` | `Widget Function(List<Model>, int, Model)` | Builds individual list items | ✅ |
-| `onUpdateStatus` | `FutureOr<void> Function(PagifyAsyncCallStatus)?` | Callback for status changes | ❌ |
+| `onUpdateStatus` | `FutureOr<void> Function(AsyncCallStatus)?` | Callback for status changes | ❌ |
 | `isReverse` | `bool` | Enable reverse pagination | ❌ |
 | `onSuccess` | `Function(int currentPage, List<Model> data)?` | Success callback | ❌ |
 | `onError` | `Function(int currentPage, String errorMessage)?` | Error callback | ❌ |
@@ -285,7 +337,7 @@ class MyModel {
 | `emptyListText` | `String?` | Text shown when list is empty | ❌ |
 | `noConnectionText` | `String?` | Text shown when no internet connection | ❌ |
 
-### Pagify.gridView Additional Parameters
+### GridView Additional Parameters
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -294,16 +346,16 @@ class MyModel {
 | `mainAxisSpacing` | `double?` | Spacing between rows |
 | `crossAxisSpacing` | `double?` | Spacing between columns |
 
-## Async Call Status
+## 📱 Status Management
 
-The package provides different status states through `PagifyAsyncCallStatus`:
+The package provides different status states through `AsyncCallStatus`:
 
 ```dart
 enum PagifyAsyncCallStatus {
-  initial,    // Initial state
-  loading,    // Data is being loaded
-  success,    // Data loaded successfully
-  error,      // General error occurred
+  initial,     // Initial state
+  loading,     // Data is being loaded
+  success,     // Data loaded successfully
+  error,       // General error occurred
   networkError, // Network connectivity error
 }
 ```
@@ -311,7 +363,7 @@ enum PagifyAsyncCallStatus {
 You can listen to status changes:
 
 ```dart
-Pagify.listView(
+EasyPagination.listView(
   // ... other parameters
   onUpdateStatus: (status) {
     switch (status) {
@@ -332,9 +384,7 @@ Pagify.listView(
 )
 ```
 
-## Error Handling
-
-### Custom Error Messages
+## ⚠️ Error Handling Best Practices
 
 ```dart
 ErrorMapper(
@@ -352,52 +402,43 @@ ErrorMapper(
 )
 ```
 
-## Best Practices
+## 💡 Best Practices
 
-1. **Always dispose controllers**: Call `controller.dispose()` in your widget's dispose method
-2. **Handle empty states**: Provide meaningful empty state messages
-3. **Implement proper error handling**: Use custom error builders for better user experience
-4. **Optimize item builders**: Keep item builders lightweight for smooth scrolling
-5. **Use appropriate page sizes**: Balance between performance and user experience
-6. **Handle network states**: Provide offline indicators when appropriate
+- **Always dispose controllers**: Call `controller.dispose()` in your widget's dispose method
+- **Handle empty states**: Provide meaningful empty state messages
+- **Implement proper error handling**: Use custom error builders for better user experience
+- **Optimize item builders**: Keep item builders lightweight for smooth scrolling
+- **Use appropriate page sizes**: Balance between performance and user experience
+- **Handle network states**: Provide offline indicators when appropriate
 
-## Example Project
+## 📖 Example
 
 For a complete example, check the `/example` folder in the package repository.
 
-## Troubleshooting
+## 🐛 Troubleshooting
 
 ### Common Issues
 
-1. **Controller not updating UI**
-   - Ensure you're calling `controller.refresh()` after manual data changes
-   - Verify the controller is properly initialized
+- **Memory leaks**
+  - Always call `controller.dispose()` in your widget's dispose method
+  - Avoid holding references to controllers in static variables
 
-2. **Network errors not handled**
-   - Make sure `connectivity_plus` is properly added to dependencies
-   - Implement both `errorWhenDio` and `errorWhenHttp` in ErrorMapper
+## 🤝 Contributing
 
-3. **Scroll position not retained**
-   - This is handled automatically by `RetainableScrollController`
-   - If issues persist, check if you're modifying data outside the controller
+Contributions are welcome! Please read our [contributing guidelines](CONTRIBUTING.md) and submit pull requests to our repository.
 
-4. **Memory leaks**
-   - Always call `controller.dispose()` in your widget's dispose method
-   - Avoid holding references to controllers in static variables
+## 📄 License
 
-## Contributing
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-Contributions are welcome! Please read our contributing guidelines and submit pull requests to our repository.
+## 🙋‍♂️ Support
 
-## License
+If you have any questions or need help with implementation, please [open an issue](https://github.com/ahmedemara231/pagination_helper/issues) on GitHub.
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+## ⭐ Show Your Support
 
-## Changelog
+If this package helped you, please give it a ⭐ on [GitHub](https://github.com/ahmedemara231/pagination_helper) and like it on [pub.dev](https://pub.dev/packages/easy_pagination)!
 
-### Version 1.0.0
-- Initial release
-- ListView and GridView support
-- Network connectivity checking
-- Comprehensive error handling
-- Controller-based data management
+---
+
+Made with ❤️ by [Ahmed Emara](https://github.com/ahmedemara231)
