@@ -6,7 +6,7 @@
 [![GitHub issues](https://img.shields.io/github/issues/ahmedemara231/pagination_helper.svg)](https://github.com/ahmedemara231/pagination_helper/issues)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A powerful and flexible Flutter package for implementing pagination with both ListView and GridView support. This package handles infinite scrolling, pull-to-refresh, loading states, error handling, and network connectivity checks automatically.
+A powerful and flexible Flutter package for implementing pagination with both ListView and GridView support. This package handles infinite scrolling, loading states, error handling, and network connectivity checks automatically.
 
 - ✅ **normal pagination**:
   
