@@ -27,10 +27,10 @@ class PagifyController<E> {
     Curve? curve,
   }) async {
     Frame.addBefore(() async => await _scrollController!.animateTo(
-      _scrollController!.position.maxScrollExtent,
-      duration: duration ?? const Duration(milliseconds: 300),
-      curve: curve ?? Curves.easeOutQuad,
-    ));
+          _scrollController!.position.maxScrollExtent,
+          duration: duration ?? const Duration(milliseconds: 300),
+          curve: curve ?? Curves.easeOutQuad,
+        ));
   }
 
   /// Smoothly scrolls to the top of the list/grid.
@@ -42,10 +42,10 @@ class PagifyController<E> {
     Curve? curve,
   }) async {
     Frame.addBefore(() async => await _scrollController!.animateTo(
-      _scrollController!.position.minScrollExtent,
-      duration: duration ?? const Duration(milliseconds: 400),
-      curve: curve ?? Curves.easeOutQuad,
-    ));
+          _scrollController!.position.minScrollExtent,
+          duration: duration ?? const Duration(milliseconds: 400),
+          curve: curve ?? Curves.easeOutQuad,
+        ));
   }
 
   /// Marks the async call status as [PagifyAsyncCallStatus.success]

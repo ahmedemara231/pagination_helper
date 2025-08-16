@@ -1,11 +1,10 @@
 /// pagination data to Extract the data list and pagination data
-class PagifyData<E>{
+class PagifyData<E> {
   /// the list of data items
   List<E> data;
 
   /// the pagination data
   PaginationData paginationData;
-
 
   /// the constructor which accepts two [List] and [PaginationData]
   PagifyData({
@@ -14,10 +13,8 @@ class PagifyData<E>{
   });
 }
 
-
 /// the pagination data which contains the [perPage] and [totalPages]
-class PaginationData{
-
+class PaginationData {
   /// number of items can pick in one request
   final int perPage;
 
