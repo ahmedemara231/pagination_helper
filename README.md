@@ -35,7 +35,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  easy_pagination: ^0.9.0
+  easy_pagination: ^0.1.0
 ```
 
 Then run:
