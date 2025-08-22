@@ -198,7 +198,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   void dispose() {
     _scrollController.dispose();
     asyncCallState.dispose();
-    _connectivitySubscription.cancel();
+    _connectivitySubscription?.cancel();
     _statusSubscription?.cancel();
     super.dispose();
   }
@@ -337,6 +337,14 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
     }
   }
 
+  String get _getNoInternetText{
+    return widget.noConnectionText?? 'Check your internet connection';
+  }
+
+  PagifyNetworkException get _getNetworkException{
+    throw PagifyNetworkException(_getNoInternetText);
+  }
+
   Future<FullResponse> _callApi(Future<FullResponse> Function(BuildContext context, int currentPage) asyncCall)async{
     late final FullResponse waitingResult;
     final connectivityResult = await _connectivity.checkConnectivity();
@@ -347,7 +355,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
           waitingResult = result;
         },
 
-        onDisconnected: () => throw PagifyNetworkException(widget.noConnectionText?? 'Check your internet connection')
+        onDisconnected: () => throw _getNetworkException,
     );
 
     return waitingResult;
@@ -366,7 +374,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
     }
   }
 
-  late final StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   void _listenToNetworkChanges(){
     _connectivitySubscription = _connectivity.onConnectivityChanged.listen((networkStatus){
       _checkIsFirstTime(
@@ -392,8 +400,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
                 await widget.onConnectivityChanged?.call(true);
               },
               onDisconnected: ()async {
-                _pagifyException = PagifyNetworkException(widget.noConnectionText?? 'Check your internet connection');
-                asyncCallState.updateAllStatues(PagifyAsyncCallStatus.networkError);
+                _errorHandler(_getNetworkException);
                 await widget.onConnectivityChanged?.call(false);
               }
           )
@@ -588,7 +595,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
           Lottie.asset(Assets.lottieNoInternet),
           const SizedBox(height: 10),
           Text(
-              widget.noConnectionText?? 'Check your internet connection',
+              _getNoInternetText,
               style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500)
           )
         ],
