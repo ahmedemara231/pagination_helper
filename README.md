@@ -1,4 +1,4 @@
-# Pa
+# Pagify
 
 [![pub package](https://img.shields.io/pub/v/easy_pagination.svg)](https://pub.dev/packages/easy_pagination)
 [![GitHub stars](https://img.shields.io/github/stars/ahmedemara231/pagination_helper.svg?style=social&label=Star)](https://github.com/ahmedemara231/pagination_helper)
@@ -12,13 +12,16 @@ A powerful and flexible Flutter package for implementing paginated lists and gri
   
 ![Image](https://github.com/user-attachments/assets/b87c7a71-6495-4376-b1af-58c56bdd500b)
 
+
 - ✅ **reverse pagination with list view**:
   
 ![Image](https://github.com/user-attachments/assets/893daf9e-2bf9-410c-a075-b70941065f8c)
 
+
 - ✅ **normal pagination with grid view**:
   
 ![Image](https://github.com/user-attachments/assets/2a29e53d-b587-44ae-b04a-9882b8359d53)
+
 
 - ✅ **reverse pagination with grid view**:
   
