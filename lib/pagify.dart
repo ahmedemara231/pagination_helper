@@ -10,9 +10,9 @@ import 'package:lottie/lottie.dart';
 import 'package:pagify/widgets/text.dart';
 import 'generated/assets.dart';
 import 'helpers/add_frame.dart';
+import 'helpers/custom_bool.dart';
 import 'helpers/data_and_pagination_data.dart';
 import 'helpers/errors.dart';
-import 'helpers/message_utils.dart';
 import 'helpers/scroll_controller.dart';
 import 'helpers/status_stream.dart';
 part 'helpers/controller.dart';
@@ -48,6 +48,9 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
 
   /// listen to network connectivity changes
   final bool listenToNetworkConnectivityChanges;
+
+  /// make action when connectivity changed
+  final FutureOr<void> Function(bool isConnected)? onConnectivityChanged;
 
   /// Callback fired before an async call starts loading.
   final FutureOr<void> Function()? onLoading;
@@ -111,6 +114,7 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
     required this.errorMapper,
     required this.itemBuilder,
     this.listenToNetworkConnectivityChanges = false,
+    this.onConnectivityChanged,
     this.onUpdateStatus,
     this.isReverse = false,
     this.onLoading,
@@ -138,6 +142,7 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
     required this.errorMapper,
     required this.itemBuilder,
     this.listenToNetworkConnectivityChanges = false,
+    this.onConnectivityChanged,
     this.onUpdateStatus,
     this.isReverse = false,
     this.onLoading,
@@ -341,47 +346,58 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
           final FullResponse result = await asyncCall(context, _currentPage);
           waitingResult = result;
         },
+
         onDisconnected: () => throw PagifyNetworkException(widget.noConnectionText?? 'Check your internet connection')
     );
 
     return waitingResult;
   }
 
-  bool isFirstFire = true;
+  CustomBool isFirstFireToInternetInterceptor = CustomBool(true);
+
+  FutureOr<void> _checkIsFirstTime(CustomBool val,
+      {required FutureOr<void> Function() onNotFirstTime}) async{
+    if(val.isFirst){
+      val.isFirst = false;
+      return;
+
+    }else{
+      await onNotFirstTime.call();
+    }
+  }
+
   late final StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
   void _listenToNetworkChanges(){
     _connectivitySubscription = _connectivity.onConnectivityChanged.listen((networkStatus){
-      dev.log('enter _listenToNetworkChanges');
-      if(isFirstFire){
-        isFirstFire = false;
-        return;
-      }
+      _checkIsFirstTime(
+          isFirstFireToInternetInterceptor,
+          onNotFirstTime: () => _checkAndMake(
+              connectivityResult: networkStatus,
+              onConnected: () async{
+                asyncCallState.setLastStatusAsCurrent(
+                    ifLastIsLoading: () async {
+                      if(_currentPage == 1){
+                        await _fetchDataFirstTimeOrRefresh();
+                      }else{
+                        if(widget.isReverse){
+                          widget.controller.moveToMaxTop();
 
-        _checkAndMake(
-            connectivityResult: networkStatus,
-            onConnected: () {
-              MessageUtils.showSimpleToast(msg: 'the internet connection is restored', color: Colors.green);
-              asyncCallState.setLastStatusAsCurrent(
-                ifLastIsLoading: () async {
-                  if(_currentPage == 1){
-                    await _fetchDataFirstTimeOrRefresh();
-                  }else{
-                    if(widget.isReverse){
-                      widget.controller.moveToMaxTop();
-
-                    }else{
-                      widget.controller.moveToMaxBottom();
+                        }else{
+                          widget.controller.moveToMaxBottom();
+                        }
+                        _onScroll();
+                      }
                     }
-                    _onScroll();
-                  }
-                }
-              );
-            },
-            onDisconnected: () {
-              _pagifyException = PagifyNetworkException(widget.noConnectionText?? 'Check your internet connection');
-              asyncCallState.updateAllStatues(PagifyAsyncCallStatus.networkError);
-            }
-        );
+                );
+                await widget.onConnectivityChanged?.call(true);
+              },
+              onDisconnected: ()async {
+                _pagifyException = PagifyNetworkException(widget.noConnectionText?? 'Check your internet connection');
+                asyncCallState.updateAllStatues(PagifyAsyncCallStatus.networkError);
+                await widget.onConnectivityChanged?.call(false);
+              }
+          )
+      );
     });
   }
 
