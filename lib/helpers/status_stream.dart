@@ -68,8 +68,10 @@ class AsyncCallStatusInterceptor {
 
   /// Updates both the current and last statuses.
   void updateAllStatues(PagifyAsyncCallStatus newStatus) {
-    updateStatus(newStatus);
-    setLastStatus(newStatus);
+    if(_controller.hasListener && !_controller.isClosed){
+      updateStatus(newStatus);
+      setLastStatus(newStatus);
+    }
   }
 
   /// Updates the current status and notifies listeners.
