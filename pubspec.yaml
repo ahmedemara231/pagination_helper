@@ -5,16 +5,17 @@ homepage: https://github.com/ahmedemara231/pagination_helper
 repository: https://github.com/ahmedemara231/pagination_helper
 
 environment:
-  sdk: ^3.6.0
+  sdk: ">=3.4.0 <4.0.0"
+
   flutter: ">=1.17.0"
 
 dependencies:
   lottie: ^3.3.1
   fluttertoast: ^8.2.12
-  connectivity_plus: ^6.1.4
+  connectivity_plus: ^6.1.5
 #  custom_refresh_indicator: ^4.0.1
-  dio: ^5.8.0+1
-  http: ^1.4.0
+  dio: ^5.9.0
+  http: ^1.5.0
 
 
 
