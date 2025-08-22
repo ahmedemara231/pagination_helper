@@ -7,6 +7,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:lottie/lottie.dart';
+import 'package:pagify/helpers/null_extension.dart';
 import 'package:pagify/widgets/text.dart';
 import 'generated/assets.dart';
 import 'helpers/add_frame.dart';
@@ -132,7 +133,11 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
     this.crossAxisCount,
     this.noConnectionText
   }) : _rankingType = _RankingType.gridView, shrinkWrap = true,
-        assert(errorMapper.errorWhenHttp != null || errorMapper.errorWhenDio != null);
+        assert(errorMapper.errorWhenHttp.isNotNull || errorMapper.errorWhenDio.isNotNull),
+        assert(
+        (listenToNetworkConnectivityChanges && (onConnectivityChanged.isNull || onConnectivityChanged.isNotNull)) ||
+            (!listenToNetworkConnectivityChanges && onConnectivityChanged.isNull)
+        );
 
   /// Creates a paginated widget with a [listView] layout.
   Pagify.listView({super.key,
@@ -161,7 +166,11 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
         childAspectRatio = null,
         crossAxisSpacing = null,
         mainAxisSpacing = null,
-        assert(errorMapper.errorWhenHttp != null || errorMapper.errorWhenDio != null);
+        assert(errorMapper.errorWhenHttp.isNotNull || errorMapper.errorWhenDio.isNotNull),
+        assert(
+        (listenToNetworkConnectivityChanges && (onConnectivityChanged.isNull || onConnectivityChanged.isNotNull)) ||
+            (!listenToNetworkConnectivityChanges && onConnectivityChanged.isNull)
+        );
 
 
   @override
@@ -176,7 +185,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   StreamSubscription<PagifyAsyncCallStatus>? _statusSubscription;
 
   void _listenStatusChanges(){
-    if(widget.onUpdateStatus != null){
+    if(widget.onUpdateStatus.isNotNull){
       _statusSubscription = asyncCallState.listenStatusChanges.listen((event) => widget.onUpdateStatus!(event));
     }
   }
@@ -624,7 +633,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   }
 
   Widget get _buildEmptyListView{
-    if(widget.emptyListView != null){
+    if(widget.emptyListView.isNotNull){
       return widget.emptyListView!;
     }
 
