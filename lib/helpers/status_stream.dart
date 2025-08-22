@@ -70,7 +70,7 @@ class AsyncCallStatusInterceptor {
   void updateAllStatues(PagifyAsyncCallStatus newStatus) {
     if(_controller.hasListener && !_controller.isClosed){
       updateStatus(newStatus);
-      setLastStatus(newStatus);
+      _setLastStatus(newStatus);
     }
   }
 
@@ -81,7 +81,7 @@ class AsyncCallStatusInterceptor {
   }
 
   /// Sets the last status before a network error occurred.
-  void setLastStatus(PagifyAsyncCallStatus newStatus) {
+  void _setLastStatus(PagifyAsyncCallStatus newStatus) {
     if (newStatus != PagifyAsyncCallStatus.networkError) {
       lastStateBeforeNetworkError = newStatus;
     }

@@ -46,6 +46,9 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
   /// Maps network and HTTP errors to messages.
   final PagifyErrorMapper errorMapper;
 
+  /// listen to network connectivity changes
+  final bool listenToNetworkConnectivityChanges;
+
   /// Callback fired before an async call starts loading.
   final FutureOr<void> Function()? onLoading;
 
@@ -107,6 +110,7 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
     required this.mapper,
     required this.errorMapper,
     required this.itemBuilder,
+    this.listenToNetworkConnectivityChanges = false,
     this.onUpdateStatus,
     this.isReverse = false,
     this.onLoading,
@@ -133,6 +137,7 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
     required this.mapper,
     required this.errorMapper,
     required this.itemBuilder,
+    this.listenToNetworkConnectivityChanges = false,
     this.onUpdateStatus,
     this.isReverse = false,
     this.onLoading,
@@ -158,7 +163,7 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
   State<Pagify<FullResponse, Model>> createState() => _PagifyState<FullResponse, Model>();
 }
 
-class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
+class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model>> {
   late RetainableScrollController _scrollController;
   late AsyncCallStatusInterceptor asyncCallState;
   late int _totalPages;
@@ -177,7 +182,9 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     asyncCallState = AsyncCallStatusInterceptor.instance;
     _scrollController = RetainableScrollController();
     _scrollController.addListener(() => _onScroll());
-    _listenToNetworkChanges();
+    if(widget.listenToNetworkConnectivityChanges){
+      _listenToNetworkChanges();
+    }
     _listenStatusChanges();
     _fetchDataFirstTimeOrRefresh();
   }
@@ -325,13 +332,13 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     }
   }
 
-  Future<Response> _callApi(Future<Response> Function(BuildContext context, int currentPage) asyncCall)async{
-    late final Response waitingResult;
+  Future<FullResponse> _callApi(Future<FullResponse> Function(BuildContext context, int currentPage) asyncCall)async{
+    late final FullResponse waitingResult;
     final connectivityResult = await _connectivity.checkConnectivity();
     await _checkAndMake(
         connectivityResult: connectivityResult,
         onConnected: () async{
-          final Response result = await asyncCall(context, _currentPage);
+          final FullResponse result = await asyncCall(context, _currentPage);
           waitingResult = result;
         },
         onDisconnected: () => throw PagifyNetworkException(widget.noConnectionText?? 'Check your internet connection')
@@ -340,28 +347,42 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     return waitingResult;
   }
 
-  bool isInitialized = false;
+  bool isFirstFire = true;
   late final StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
   void _listenToNetworkChanges(){
     _connectivitySubscription = _connectivity.onConnectivityChanged.listen((networkStatus){
       dev.log('enter _listenToNetworkChanges');
-      if(isInitialized){
+      if(isFirstFire){
+        isFirstFire = false;
+        return;
+      }
+
         _checkAndMake(
             connectivityResult: networkStatus,
             onConnected: () {
               MessageUtils.showSimpleToast(msg: 'the internet connection is restored', color: Colors.green);
               asyncCallState.setLastStatusAsCurrent(
-                ifLastIsLoading: () async => _currentPage == 1?
-                await _fetchDataFirstTimeOrRefresh() :
-                await _onScroll(),
+                ifLastIsLoading: () async {
+                  if(_currentPage == 1){
+                    await _fetchDataFirstTimeOrRefresh();
+                  }else{
+                    if(widget.isReverse){
+                      widget.controller.moveToMaxTop();
+
+                    }else{
+                      widget.controller.moveToMaxBottom();
+                    }
+                    _onScroll();
+                  }
+                }
               );
             },
-            onDisconnected: () => asyncCallState.updateAllStatues(PagifyAsyncCallStatus.networkError)
+            onDisconnected: () {
+              _pagifyException = PagifyNetworkException(widget.noConnectionText?? 'Check your internet connection');
+              asyncCallState.updateAllStatues(PagifyAsyncCallStatus.networkError);
+            }
         );
-      }
     });
-
-    Future.delayed(const Duration(seconds: 1), () => isInitialized = true);
   }
 
   Future<void> _fetchDataFirstTimeOrRefresh() async {
