@@ -19,7 +19,7 @@ part 'helpers/controller.dart';
 
 
 /// Defines the type of list ranking to use in [Pagify].
-enum RankingType {
+enum _RankingType {
   /// Displays items in a [GridView].
   gridView,
 
@@ -28,9 +28,9 @@ enum RankingType {
 }
 
 
-/// [Response] is the type of the API response.
+/// [FullResponse] is the type of the API response.
 /// [Model] is the type of each data item in the list.
-class Pagify<Response, Model> extends StatefulWidget {
+class Pagify<FullResponse, Model> extends StatefulWidget {
   /// Called whenever the async call status changes.
   final FutureOr<void> Function(PagifyAsyncCallStatus status)? onUpdateStatus;
 
@@ -41,7 +41,7 @@ class Pagify<Response, Model> extends StatefulWidget {
   final bool showNoDataAlert;
 
   /// Determines the layout type (grid or list).
-  final RankingType rankingType;
+  final _RankingType _rankingType;
 
   /// Maps network and HTTP errors to messages.
   final PagifyErrorMapper errorMapper;
@@ -56,10 +56,10 @@ class Pagify<Response, Model> extends StatefulWidget {
   final FutureOr<void> Function(BuildContext context, int currentPage, PagifyException exception)? onError;
 
   /// The asynchronous API call to fetch paginated data.
-  final Future<Response> Function(BuildContext context, int currentPage) asyncCall;
+  final Future<FullResponse> Function(BuildContext context, int currentPage) asyncCall;
 
-  /// Maps the API [Response] to a [PagifyData] object containing items and pagination info.
-  final PagifyData<Model> Function(Response response) mapper;
+  /// Maps the API [FullResponse] to a [PagifyData] object containing items and pagination info.
+  final PagifyData<Model> Function(FullResponse response) mapper;
 
   /// Builds each list/grid item widget.
   final Widget Function(BuildContext context, List<Model> data, int index, Model element) itemBuilder;
@@ -68,7 +68,10 @@ class Pagify<Response, Model> extends StatefulWidget {
   final Widget? loadingBuilder;
 
   /// Custom widget to display when an error occurs.
-  final Widget Function(String errorMsg)? errorBuilder;
+  final Widget Function(PagifyException e)? errorBuilder;
+
+  /// Custom widget to display when the data list is empty.
+  final Widget? emptyListView;
 
   /// Controller for interacting with the pagination state.
   final PagifyController<Model> controller;
@@ -94,9 +97,6 @@ class Pagify<Response, Model> extends StatefulWidget {
   /// Text to display when there is no internet connection.
   final String? noConnectionText;
 
-  /// Text to display when the list is empty.
-  final String? emptyListText;
-
   /// Creates a paginated widget with a [GridView] layout.
   Pagify.gridView({super.key,
     required this.controller,
@@ -112,14 +112,14 @@ class Pagify<Response, Model> extends StatefulWidget {
     this.showNoDataAlert = false,
     this.loadingBuilder,
     this.errorBuilder,
+    this.emptyListView,
     this.mainAxisSpacing,
     this.crossAxisSpacing,
     this.childAspectRatio = 1,
     this.scrollDirection,
     this.crossAxisCount,
-    this.emptyListText,
     this.noConnectionText
-  }) : rankingType = RankingType.gridView, shrinkWrap = true,
+  }) : _rankingType = _RankingType.gridView, shrinkWrap = true,
         assert(errorMapper.errorWhenHttp != null || errorMapper.errorWhenDio != null);
 
   /// Creates a paginated widget with a [listView] layout.
@@ -137,11 +137,11 @@ class Pagify<Response, Model> extends StatefulWidget {
     this.showNoDataAlert = false,
     this.loadingBuilder,
     this.errorBuilder,
+    this.emptyListView,
     this.shrinkWrap,
     this.scrollDirection,
-    this.emptyListText,
     this.noConnectionText
-  }) : rankingType = RankingType.listView,
+  }) : _rankingType = _RankingType.listView,
         crossAxisCount = null,
         childAspectRatio = null,
         crossAxisSpacing = null,
@@ -150,7 +150,7 @@ class Pagify<Response, Model> extends StatefulWidget {
 
 
   @override
-  State<Pagify<Response, Model>> createState() => _PagifyState<Response, Model>();
+  State<Pagify<FullResponse, Model>> createState() => _PagifyState<FullResponse, Model>();
 }
 
 class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
@@ -160,6 +160,12 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
   int _currentPage = 1;
   StreamSubscription<PagifyAsyncCallStatus>? _statusSubscription;
 
+  void _listenStatusChanges(){
+    if(widget.onUpdateStatus != null){
+      _statusSubscription = asyncCallState.listenStatusChanges.listen((event) => widget.onUpdateStatus!(event));
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -167,9 +173,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     _scrollController = RetainableScrollController();
     _scrollController.addListener(() => _onScroll());
     _listenToNetworkChanges();
-    if(widget.onUpdateStatus != null){
-      _statusSubscription = asyncCallState.listenStatusChanges.listen((event) => widget.onUpdateStatus!(event));
-    }
+    _listenStatusChanges();
     _fetchDataFirstTimeOrRefresh();
   }
 
@@ -182,7 +186,9 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
     super.dispose();
   }
 
-  String _errorMsg = '';
+  late PagifyException _pagifyException;
+  late String _errorMsg;
+
   void _logError(Exception e){
     if(e is DioException){
       String prettyJson = const JsonEncoder.withIndent('  ').convert(e.response?.data);
@@ -196,10 +202,9 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
   PagifyException _getPagifyException(PagifyException e) => e;
 
   FutureOr<void> _errorHandler(Exception e){
-    final PagifyException pagifyException;
     if(e is PagifyNetworkException){
       asyncCallState.updateAllStatues(PagifyAsyncCallStatus.networkError);
-      pagifyException = _getPagifyException(e);
+      _pagifyException = _getPagifyException(e);
     }else{
       asyncCallState.updateAllStatues(PagifyAsyncCallStatus.error);
       if(e is DioException){
@@ -212,11 +217,11 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
         _errorMsg = 'There is error occur $e';
       }
 
-      pagifyException = _getPagifyException(ApiRequestException(_errorMsg));
+      _pagifyException = _getPagifyException(ApiRequestException(_errorMsg));
     }
 
     _logError(e);
-    widget.onError?.call(context, _currentPage, pagifyException);
+    widget.onError?.call(context, _currentPage, _pagifyException);
   }
 
   Future<void> _onScroll() async{
@@ -334,6 +339,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
   late final StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
   void _listenToNetworkChanges(){
     _connectivitySubscription = _connectivity.onConnectivityChanged.listen((networkStatus){
+      dev.log('enter _listenToNetworkChanges');
       if(isInitialized){
         _checkAndMake(
             connectivityResult: networkStatus,
@@ -389,7 +395,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
   // }
 
   Widget _listRanking(){
-    if(widget.rankingType == RankingType.gridView){
+    if(widget._rankingType == _RankingType.gridView){
       return _gridView();
     }
     return _listView();
@@ -496,11 +502,12 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
   Widget get _loadingWidget{
     switch(widget.loadingBuilder){
       case null:
-        return Center(child: SizedBox.square(
+        return const Center(child: SizedBox.square(
             dimension: 30,
-            child: const CircularProgressIndicator.adaptive()
+            child: CircularProgressIndicator.adaptive()
         )
         );
+
       default:
         return widget.loadingBuilder!;
     }
@@ -514,49 +521,65 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
       //   MessageUtils.showSimpleToast(msg: _errorMsg, color: Colors.red);
       // }
       return _listRanking();
+
     }else{
-      if(asyncCallState.currentState.isNetworkError){
-        return Column(
-          children: [
-            Lottie.asset(Assets.lottieNoInternet),
-            const SizedBox(height: 10),
-            Text(
-                widget.noConnectionText?? 'Check your internet connection',
-                style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500)
-            )
-          ],
-        );
-      }
       switch(widget.errorBuilder){
         case null:
-          return Column(
-            children: [
-              Lottie.asset(Assets.lottieApiError),
-              const SizedBox(height: 10),
-              Text(
-                  _errorMsg,
-                  style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500)
-              )
-            ],
-          );
+          return _buildDefaultErrorView;
+
         default:
-          return widget.errorBuilder!(_errorMsg);
+          return widget.errorBuilder!.call(_pagifyException);
       }
     }
+  }
+ //
+  Widget get _buildDefaultErrorView{
+    if(asyncCallState.currentState.isNetworkError){
+      return Column(
+        children: [
+          Lottie.asset(Assets.lottieNoInternet),
+          const SizedBox(height: 10),
+          Text(
+              widget.noConnectionText?? 'Check your internet connection',
+              style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500)
+          )
+        ],
+      );
+    }
+
+    return Column(
+      children: [
+        Lottie.asset(Assets.lottieApiError),
+        const SizedBox(height: 10),
+        Text(
+            _errorMsg,
+            style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500)
+        )
+      ],
+    );
   }
 
   Widget get _buildSuccessWidget{
     if(_itemsIsNotEmpty){
       return _listRanking();
+
     }else{
-      return Column(
-        children: [
-          Lottie.asset(Assets.lottieNoData),
-          const SizedBox(height: 10),
-          Text(widget.emptyListText?? 'There is no data right now!')
-        ],
-      );
+      return _buildEmptyListView;
     }
+  }
+
+  Widget get _buildEmptyListView{
+    if(widget.emptyListView != null){
+      return widget.emptyListView!;
+    }
+
+    return Column(
+      children: [
+        Lottie.asset(Assets.lottieNoData),
+        const SizedBox(height: 10),
+        Text('There is no data right now!')
+      ],
+    );
   }
 
   // Future<void> _manageRefreshIndicator()async{
@@ -581,7 +604,7 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
           activeStateCallBack: (snapshot) => snapshot.hasData?
           snapshot.data!.isError || snapshot.data!.isNetworkError?
           _buildErrorWidget : asyncCallState.currentState.isLoading?
-          _buildLoadingView : _buildSuccessWidget : AppText('the stream throws an exception'),
+          _buildLoadingView : _buildSuccessWidget : const AppText('the stream throws an exception'),
         )
     );
   }
@@ -614,7 +637,7 @@ class SnapshotHandler extends StatelessWidget {
         return loadingWidget;
 
       case ConnectionState.none:
-        return AppText('no stream connection!');
+        return const AppText('no stream connection!');
 
 
       default:
