@@ -351,7 +351,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   }
 
   PagifyNetworkException get _getNetworkException{
-    throw PagifyNetworkException(_getNoInternetText);
+    return PagifyNetworkException(_getNoInternetText);
   }
 
   Future<FullResponse> _callApi(Future<FullResponse> Function(BuildContext context, int currentPage) asyncCall)async{
