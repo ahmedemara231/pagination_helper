@@ -70,6 +70,9 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
   /// Custom widget to display when an error occurs.
   final Widget Function(PagifyException e)? errorBuilder;
 
+  /// choose if need to ignore [ErrorBuilder] and keep the list visible when error occurs and list is not empty
+  final bool ignoreErrorBuilderWhenErrorOccursAndListIsNotEmpty;
+
   /// Custom widget to display when the data list is empty.
   final Widget? emptyListView;
 
@@ -109,6 +112,7 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
     this.onLoading,
     this.onSuccess,
     this.onError,
+    this.ignoreErrorBuilderWhenErrorOccursAndListIsNotEmpty = false,
     this.showNoDataAlert = false,
     this.loadingBuilder,
     this.errorBuilder,
@@ -134,6 +138,7 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
     this.onLoading,
     this.onSuccess,
     this.onError,
+    this.ignoreErrorBuilderWhenErrorOccursAndListIsNotEmpty = false,
     this.showNoDataAlert = false,
     this.loadingBuilder,
     this.errorBuilder,
@@ -515,24 +520,30 @@ class _PagifyState<Response, Model> extends State<Pagify<Response, Model>> {
 
   Widget get _buildErrorWidget{
     if(_itemsIsNotEmpty){
-      // if(asyncCallState.currentState.isNetworkError){
-      //   MessageUtils. showSimpleToast(msg: widget.noConnectionText?? 'Check your internet connection', color: Colors.red);
-      // }else{
-      //   MessageUtils.showSimpleToast(msg: _errorMsg, color: Colors.red);
-      // }
-      return _listRanking();
+      return _showListOrErrorBuilderBasedUserNeeds;
 
     }else{
-      switch(widget.errorBuilder){
-        case null:
-          return _buildDefaultErrorView;
-
-        default:
-          return widget.errorBuilder!.call(_pagifyException);
-      }
+      return _buildErrorViewBasedErrorBuilder;
     }
   }
- //
+
+  Widget get _showListOrErrorBuilderBasedUserNeeds{
+    if(widget.ignoreErrorBuilderWhenErrorOccursAndListIsNotEmpty){
+      return _listRanking();
+    }
+    return _buildErrorViewBasedErrorBuilder;
+  }
+  
+  Widget get _buildErrorViewBasedErrorBuilder{
+    switch(widget.errorBuilder){
+      case null:
+        return _buildDefaultErrorView;
+
+      default:
+        return widget.errorBuilder!.call(_pagifyException);
+    }
+  }
+
   Widget get _buildDefaultErrorView{
     if(asyncCallState.currentState.isNetworkError){
       return Column(
