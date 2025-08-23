@@ -6,6 +6,20 @@ part of '../pagify.dart';
 /// controlling the scroll position, and notifying the pagination system
 /// when changes occur.
 class PagifyController<E> {
+
+  /// remake the last request when its fail for example
+  FutureOr<void> retry(){
+    final pagifyCurrentState = _pagifyKey.currentState;
+    assert(pagifyCurrentState?.widget.key is GlobalKey<PagifyState>, 'the pagify key must be instance of GlobalKey<_PagifyState>');
+
+    if(pagifyCurrentState?._currentPage == 1){
+      pagifyCurrentState?._fetchDataFirstTimeOrRefresh();
+
+    }else{
+      pagifyCurrentState?._onScroll();
+    }
+  }
+
   /// Internal list of items being displayed, wrapped in a [ValueNotifier]
   /// so that widgets can listen for changes.
   final ValueNotifier<List<E>> _items = ValueNotifier<List<E>>([]);

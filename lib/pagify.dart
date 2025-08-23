@@ -28,6 +28,8 @@ enum _RankingType {
   listView
 }
 
+/// pagify global key to use in controller
+ GlobalKey<PagifyState> _pagifyKey = GlobalKey<PagifyState>();
 
 /// [FullResponse] is the type of the API response.
 /// [Model] is the type of each data item in the list.
@@ -174,26 +176,28 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
 
 
   @override
-  State<Pagify<FullResponse, Model>> createState() => _PagifyState<FullResponse, Model>();
+  State<Pagify<FullResponse, Model>> createState() => PagifyState<FullResponse, Model>();
 }
 
-class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model>> {
+
+/// [State] object of pagify widget object
+class PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model>> {
   late RetainableScrollController _scrollController;
-  late AsyncCallStatusInterceptor asyncCallState;
+  late AsyncCallStatusInterceptor _asyncCallState;
   late int _totalPages;
   int _currentPage = 1;
   StreamSubscription<PagifyAsyncCallStatus>? _statusSubscription;
 
   void _listenStatusChanges(){
     if(widget.onUpdateStatus.isNotNull){
-      _statusSubscription = asyncCallState.listenStatusChanges.listen((event) => widget.onUpdateStatus!(event));
+      _statusSubscription = _asyncCallState.listenStatusChanges.listen((event) => widget.onUpdateStatus!(event));
     }
   }
 
   @override
   void initState() {
     super.initState();
-    asyncCallState = AsyncCallStatusInterceptor.instance;
+    _asyncCallState = AsyncCallStatusInterceptor.instance;
     _scrollController = RetainableScrollController();
     _scrollController.addListener(() => _onScroll());
     if(widget.listenToNetworkConnectivityChanges){
@@ -206,7 +210,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   @override
   void dispose() {
     _scrollController.dispose();
-    asyncCallState.dispose();
+    _asyncCallState.dispose();
     _connectivitySubscription?.cancel();
     _statusSubscription?.cancel();
     super.dispose();
@@ -229,10 +233,10 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
 
   FutureOr<void> _errorHandler(Exception e){
     if(e is PagifyNetworkException){
-      asyncCallState.updateAllStatues(PagifyAsyncCallStatus.networkError);
+      _asyncCallState.updateAllStatues(PagifyAsyncCallStatus.networkError);
       _pagifyException = _getPagifyException(e);
     }else{
-      asyncCallState.updateAllStatues(PagifyAsyncCallStatus.error);
+      _asyncCallState.updateAllStatues(PagifyAsyncCallStatus.error);
       if(e is DioException){
         _errorMsg = widget.errorMapper.errorWhenDio?.call(e)?? '';
 
@@ -263,14 +267,14 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
       case true:
         if (_scrollController.position.pixels ==
             _scrollController.position.minScrollExtent &&
-            !asyncCallState.currentState.isLoading &&
+            !_asyncCallState.currentState.isLoading &&
             _currentPage <= _totalPages){
           await _fetchDataWhenScrollUp();
         }
       default:
         if (_scrollController.position.pixels ==
             _scrollController.position.maxScrollExtent &&
-            !asyncCallState.currentState.isLoading &&
+            !_asyncCallState.currentState.isLoading &&
             _currentPage <= _totalPages) {
           await _fetchDataWhenScrollDown();
         }
@@ -309,13 +313,13 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
     FutureOr<void> Function(PagifyData<Model> mapperResult)? whenEnd,
   })async{
     await whenStart?.call();
-    asyncCallState.updateAllStatues(PagifyAsyncCallStatus.loading);
+    _asyncCallState.updateAllStatues(PagifyAsyncCallStatus.loading);
     await widget.onLoading?.call();
     _scrollController.retainOffset();
     final mapperResult = await _manageMapper();
     if(_currentPage <= mapperResult.paginationData.totalPages.toInt()){
       setState(() => _currentPage++);
-      asyncCallState.updateAllStatues(PagifyAsyncCallStatus.success);
+      _asyncCallState.updateAllStatues(PagifyAsyncCallStatus.success);
     }
     await whenEnd?.call(mapperResult);
   }
@@ -370,7 +374,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
     return waitingResult;
   }
 
-  CustomBool isFirstFireToInternetInterceptor = CustomBool(true);
+  final CustomBool _isFirstFireToInternetInterceptor = CustomBool(true);
 
   FutureOr<void> _checkIsFirstTime(CustomBool val,
       {required FutureOr<void> Function() onNotFirstTime}) async{
@@ -387,11 +391,11 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   void _listenToNetworkChanges(){
     _connectivitySubscription = _connectivity.onConnectivityChanged.listen((networkStatus){
       _checkIsFirstTime(
-          isFirstFireToInternetInterceptor,
+          _isFirstFireToInternetInterceptor,
           onNotFirstTime: () => _checkAndMake(
               connectivityResult: networkStatus,
               onConnected: () async{
-                asyncCallState.setLastStatusAsCurrent(
+                _asyncCallState.setLastStatusAsCurrent(
                     ifLastIsLoading: () async {
                       if(_currentPage == 1){
                         await _fetchDataFirstTimeOrRefresh();
@@ -460,7 +464,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   }
 
   bool get _hasMoreData => _currentPage <= _totalPages;
-  bool get _shouldShowLoading => _hasMoreData && asyncCallState.currentState.isLoading;
+  bool get _shouldShowLoading => _hasMoreData && _asyncCallState.currentState.isLoading;
   bool get _shouldShowNoData => widget.showNoDataAlert && !_hasMoreData;
   final Widget _noMoreDataText = const AppText('No more data', textAlign: TextAlign.center, color: Colors.grey);
 
@@ -598,7 +602,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   }
 
   Widget get _buildDefaultErrorView{
-    if(asyncCallState.currentState.isNetworkError){
+    if(_asyncCallState.currentState.isNetworkError){
       return Column(
         children: [
           Lottie.asset(Assets.lottieNoInternet),
@@ -661,13 +665,13 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<PagifyAsyncCallStatus>(
-        stream: asyncCallState.listenStatusChanges,
+        stream: _asyncCallState.listenStatusChanges,
         builder: (context, snapshot) => SnapshotHandler(
           snapshot: snapshot,
           loadingWidget: _loadingWidget,
           activeStateCallBack: (snapshot) => snapshot.hasData?
           snapshot.data!.isError || snapshot.data!.isNetworkError?
-          _buildErrorWidget : asyncCallState.currentState.isLoading?
+          _buildErrorWidget : _asyncCallState.currentState.isLoading?
           _buildLoadingView : _buildSuccessWidget : const AppText('the stream throws an exception'),
         )
     );
