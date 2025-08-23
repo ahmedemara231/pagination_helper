@@ -8,24 +8,15 @@
 
 A powerful and flexible Flutter package for implementing paginated lists and grids with built-in loading states, error handling, and optional Advanced network connectivity management.
 
-- ✅ **normal pagination with list view**:
-  
-![Image](https://github.com/user-attachments/assets/b87c7a71-6495-4376-b1af-58c56bdd500b)
 
+- ✅ **reverse pagination with grid view**
 
-- ✅ **reverse pagination with list view**:
-  
-![Image](https://github.com/user-attachments/assets/893daf9e-2bf9-410c-a075-b70941065f8c)
+![Reverse Grid View](https://github.com/user-attachments/assets/2327113d-6de1-4d39-b340-8f14f94b70c8)
 
+- ✅ **normal pagination with list view**
 
-- ✅ **normal pagination with grid view**:
-  
-![Image](https://github.com/user-attachments/assets/da8d6b2b-6591-4c3c-a57e-c2767791ed23)
+![Normal List View](https://github.com/user-attachments/assets/b87c7a71-6495-4376-b1af-58c56bdd500b)
 
-
-- ✅ **reverse pagination with grid view**:
-  
-![Image](https://github.com/user-attachments/assets/2327113d-6de1-4d39-b340-8f14f94b70c8)
 
 ## 🚀 Features
 
