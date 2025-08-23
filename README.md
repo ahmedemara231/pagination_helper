@@ -392,10 +392,63 @@ Pagify<ApiResponse, Post>.listView(
 )
 ```
 
+### retry function example (important)
+
+```dart
+  int count = 0;
+
+  /// pagify global key to use in controller's retry function
+  GlobalKey<PagifyState> pagifyKey = GlobalKey<PagifyState>();
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: AppBar(title: const Text('Example Usage')),
+        body: Pagify<ExampleModel, String>.gridView(
+            key: pagifyKey, // you must pass this key if you want to use the retry function
+            showNoDataAlert: true,
+            onLoading: () => log('loading now ...!'),
+            onSuccess: (context, data) => log('the data is ready $data'),
+            onError: (context, page, e) async{
+            await Future.delayed(const Duration(seconds: 2));
+            count++;
+            if(count > 3){
+              return;
+            }
+            _controller.retry();
+              log('page : $page');
+              if(e is PagifyNetworkException){
+                log('check your internet connection');
+
+              }else if(e is ApiRequestException){
+                log('check your server ${e.msg}');
+
+              }else{
+                log('other error ...!');
+              }
+            },
+            controller: _controller,
+            asyncCall: (context, page)async => await _fetchData(page),
+            mapper: (response) => PagifyData(
+                data: response.items,
+                paginationData: PaginationData(
+                  totalPages: response.totalPages,
+                  perPage: 10,
+                )
+            ),
+            itemBuilder: (context, data, index, element) => Center(
+                child: AppText(element, fontSize: 20,).paddingSymmetric(vertical: 10)
+            )
+        )
+    );
+  }
+```
+
+
 ## 📱 Controller Methods
 
 | Method | Description |
 |--------|-------------|
+| `retry()` | remake the last request if it failed for example |
 | `addItem(E item)` | Add item to the end of the list |
 | `addItemAt(int index, E item)` | Insert item at specific index |
 | `addAtBeginning(E item)` | Add item at the beginning |
