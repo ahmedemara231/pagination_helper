@@ -1,4 +1,4 @@
-## 0.1.0
+## 0.1.2
 
 * Added support for both ListView and GridView implementations
 * Implemented comprehensive error handling for network operations
@@ -13,3 +13,4 @@
 * enhance error handler and onError function which can make full control in coming error by give ApiRequestException
 * remove unwanted toast and make it optional based developer needs
 * give BuildContext in important callBacks
+* add controller's retry function and onConnectivityChanged
