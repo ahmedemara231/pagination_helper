@@ -6,7 +6,6 @@ part of '../pagify.dart';
 /// controlling the scroll position, and notifying the pagination system
 /// when changes occur.
 class PagifyController<E> {
-
   late _PagifyState? _pagifyState;
   void _init(_PagifyState state){
     _pagifyState = state;
@@ -30,8 +29,8 @@ class PagifyController<E> {
   RetainableScrollController? _scrollController;
 
   /// Initializes the internal scroll controller if it hasn't been set.
-  void _initScrollController(RetainableScrollController controller) {
-    _scrollController ??= controller;
+  void _initScrollController() {
+    _scrollController ??= _pagifyState?._scrollController;
   }
 
   /// Smoothly scrolls to the bottom of the list/grid.
@@ -67,7 +66,7 @@ class PagifyController<E> {
   /// Marks the async call status as [PagifyAsyncCallStatus.success]
   /// after the data changes.
   void _makeActionOnDataChanging() =>
-      AsyncCallStatusInterceptor.instance.updateAllStatues(
+      _pagifyState?._asyncCallState.updateAllStatues(
         PagifyAsyncCallStatus.success,
       );
 

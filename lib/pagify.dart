@@ -195,7 +195,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   void initState() {
     super.initState();
     widget.controller._init(this);
-    _asyncCallState = AsyncCallStatusInterceptor.instance;
+    _asyncCallState = AsyncCallStatusInterceptor();
     _scrollController = RetainableScrollController();
     _scrollController.addListener(() => _onScroll());
     if(widget.listenToNetworkConnectivityChanges){
@@ -429,7 +429,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
           // },
           whenEnd: (mapperResult) async{
             widget.controller._updateItems(newItems: mapperResult.data);
-            widget.controller._initScrollController(_scrollController);
+            widget.controller._initScrollController();
             await widget.onSuccess?.call(context, _itemsList);
             if(widget.isReverse){
               Frame.addBefore(() => _scrollDownWhileGetDataFirstTimeWhenReverse());

@@ -39,11 +39,11 @@ extension AsyncCallStatusExtension on PagifyAsyncCallStatus {
 /// This class is used by [Pagify] to keep track of and notify
 /// listeners when the API call status changes.
 class AsyncCallStatusInterceptor {
-  static AsyncCallStatusInterceptor? _instance;
-
-  /// Returns the singleton instance of [AsyncCallStatusInterceptor].
-  static AsyncCallStatusInterceptor get instance =>
-      _instance ??= AsyncCallStatusInterceptor();
+  // static AsyncCallStatusInterceptor? _instance;
+  //
+  // /// Returns the singleton instance of [AsyncCallStatusInterceptor].
+  // static AsyncCallStatusInterceptor get instance =>
+  //     _instance ??= AsyncCallStatusInterceptor();
 
   /// The current async call status.
   late PagifyAsyncCallStatus currentState;
@@ -112,6 +112,6 @@ class AsyncCallStatusInterceptor {
   /// Closes the stream and resets the singleton instance.
   void dispose() {
     _controller.close();
-    _instance = null;
+    // _instance = null;
   }
 }
