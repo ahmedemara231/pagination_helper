@@ -395,15 +395,11 @@ Pagify<ApiResponse, Post>.listView(
 
 ```dart
   int count = 0;
-
-  /// pagify global key to use in controller's retry function
-  GlobalKey<PagifyState> pagifyKey = GlobalKey<PagifyState>();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(title: const Text('Example Usage')),
         body: Pagify<ExampleModel, String>.gridView(
-            key: pagifyKey, // you must pass this key if you want to use the retry function
             showNoDataAlert: true,
             onLoading: () => log('loading now ...!'),
             onSuccess: (context, data) => log('the data is ready $data'),
