@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:pagify/helpers/data_and_pagination_data.dart';
 import 'package:pagify/helpers/errors.dart';
 import 'package:pagify/pagify.dart';
+import 'package:pagify/widgets/text.dart';
 
 void main() {
   runApp(const PagifyExample());
@@ -46,6 +47,8 @@ class _PagifyExampleState extends State<PagifyExample> {
     _pagifyController.dispose();
     super.dispose();
   }
+
+  int count = 0;
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -53,9 +56,39 @@ class _PagifyExampleState extends State<PagifyExample> {
       home: Scaffold(
         appBar: AppBar(title: const Text('Example Usage')),
         body: Pagify<ExampleModel, String>.gridView(
+          isReverse: false,
+          showNoDataAlert: true,
+          controller: _pagifyController,
+          asyncCall: (context, page)async => await _fetchData(page),
+          mapper: (response) => PagifyData(
+              data: response.items,
+              paginationData: PaginationData(
+                totalPages: response.totalPages,
+                perPage: 10,
+              )
+          ),
+          errorMapper: PagifyErrorMapper(
+            errorWhenDio: (e) => 'e.response?.data['']', // if you using Dio
+            errorWhenHttp: (e) => 'e.message', // if you using Http
+          ),
+          itemBuilder: (context, data, index, element) => Center(
+              child: InkWell(
+                  onTap: (){
+                    log('enter here');
+                    _pagifyController.addAtBeginning('otieuytoiuet');
+                  },
+                  child: AppText(element, fontSize: 20,)
+              )
+          ),
           onLoading: () => log('loading now ...!'),
           onSuccess: (context, data) => log('the data is ready $data'),
-          onError: (context, page, e) {
+          onError: (context, page, e) async{
+            await Future.delayed(const Duration(seconds: 2));
+            count++;
+            if(count > 3){
+              return;
+            }
+            _pagifyController.retry();
             log('page : $page');
             if(e is PagifyNetworkException){
               log('check your internet connection');
@@ -67,23 +100,19 @@ class _PagifyExampleState extends State<PagifyExample> {
               log('other error ...!');
             }
           },
-          childAspectRatio: 2,
-          mainAxisSpacing: 10,
-          crossAxisCount: 12,
-          controller: _pagifyController,
-          asyncCall: (context, page)async => await _fetchData(page),
-          mapper: (response) => PagifyData(
-              data: response.items,
-              paginationData: PaginationData(
-                totalPages: response.totalPages,
-                perPage: 10,
-              )
+
+          ignoreErrorBuilderWhenErrorOccursAndListIsNotEmpty: true,
+          errorBuilder: (e) => Container(
+              color: e is PagifyNetworkException?
+              Colors.green: Colors.red,
+              child: AppText(e.msg)
           ),
-          errorMapper: PagifyErrorMapper(
-            errorWhenDio: (e) => e.response?.data['errorMsg'], // if you using Dio
-            errorWhenHttp: (e) => e.message, // if you using Http
-          ),
-          itemBuilder: (context, data, index, element) => Text(element)
+
+          listenToNetworkConnectivityChanges: true,
+          onConnectivityChanged: (isConnected) => isConnected?
+          log('connected') : log('disconnected'),
+
+          onUpdateStatus: (s) => log('message $s'),
         )
       ),
     );

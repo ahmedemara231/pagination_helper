@@ -28,9 +28,6 @@ enum _RankingType {
   listView
 }
 
-/// pagify global key to use in controller
- GlobalKey<PagifyState> _pagifyKey = GlobalKey<PagifyState>();
-
 /// [FullResponse] is the type of the API response.
 /// [Model] is the type of each data item in the list.
 class Pagify<FullResponse, Model> extends StatefulWidget {
@@ -176,12 +173,12 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
 
 
   @override
-  State<Pagify<FullResponse, Model>> createState() => PagifyState<FullResponse, Model>();
+  State<Pagify<FullResponse, Model>> createState() => _PagifyState<FullResponse, Model>();
 }
 
 
 /// [State] object of pagify widget object
-class PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model>> {
+class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model>> {
   late RetainableScrollController _scrollController;
   late AsyncCallStatusInterceptor _asyncCallState;
   late int _totalPages;
@@ -197,6 +194,7 @@ class PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model>
   @override
   void initState() {
     super.initState();
+    widget.controller._init(this);
     _asyncCallState = AsyncCallStatusInterceptor.instance;
     _scrollController = RetainableScrollController();
     _scrollController.addListener(() => _onScroll());

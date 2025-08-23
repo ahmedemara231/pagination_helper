@@ -7,16 +7,18 @@ part of '../pagify.dart';
 /// when changes occur.
 class PagifyController<E> {
 
+  late _PagifyState? _pagifyState;
+  void _init(_PagifyState state){
+    _pagifyState = state;
+  }
+
   /// remake the last request when its fail for example
   FutureOr<void> retry(){
-    final pagifyCurrentState = _pagifyKey.currentState;
-    assert(pagifyCurrentState?.widget.key is GlobalKey<PagifyState>, 'the pagify key must be instance of GlobalKey<_PagifyState>');
-
-    if(pagifyCurrentState?._currentPage == 1){
-      pagifyCurrentState?._fetchDataFirstTimeOrRefresh();
+    if(_pagifyState?._currentPage == 1){
+      _pagifyState?._fetchDataFirstTimeOrRefresh();
 
     }else{
-      pagifyCurrentState?._onScroll();
+      _pagifyState?._onScroll();
     }
   }
 
