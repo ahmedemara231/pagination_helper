@@ -20,13 +20,12 @@ A powerful and flexible Flutter package for implementing paginated lists and gri
 
 - ✅ **normal pagination with grid view**:
   
-![Image](https://github.com/user-attachments/assets/2a29e53d-b587-44ae-b04a-9882b8359d53)
+![Image](https://github.com/user-attachments/assets/da8d6b2b-6591-4c3c-a57e-c2767791ed23)
 
 
 - ✅ **reverse pagination with grid view**:
   
-![Image](https://github.com/user-attachments/assets/ae4901d2-48c8-4425-8608-54a193851cd3)
-
+![Image](https://github.com/user-attachments/assets/2327113d-6de1-4d39-b340-8f14f94b70c8)
 
 ## 🚀 Features
 
@@ -392,10 +391,63 @@ Pagify<ApiResponse, Post>.listView(
 )
 ```
 
+### retry function example (important)
+
+```dart
+  int count = 0;
+
+  /// pagify global key to use in controller's retry function
+  GlobalKey<PagifyState> pagifyKey = GlobalKey<PagifyState>();
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: AppBar(title: const Text('Example Usage')),
+        body: Pagify<ExampleModel, String>.gridView(
+            key: pagifyKey, // you must pass this key if you want to use the retry function
+            showNoDataAlert: true,
+            onLoading: () => log('loading now ...!'),
+            onSuccess: (context, data) => log('the data is ready $data'),
+            onError: (context, page, e) async{
+            await Future.delayed(const Duration(seconds: 2));
+            count++;
+            if(count > 3){
+              return;
+            }
+            _controller.retry();
+              log('page : $page');
+              if(e is PagifyNetworkException){
+                log('check your internet connection');
+
+              }else if(e is ApiRequestException){
+                log('check your server ${e.msg}');
+
+              }else{
+                log('other error ...!');
+              }
+            },
+            controller: _controller,
+            asyncCall: (context, page)async => await _fetchData(page),
+            mapper: (response) => PagifyData(
+                data: response.items,
+                paginationData: PaginationData(
+                  totalPages: response.totalPages,
+                  perPage: 10,
+                )
+            ),
+            itemBuilder: (context, data, index, element) => Center(
+                child: AppText(element, fontSize: 20,).paddingSymmetric(vertical: 10)
+            )
+        )
+    );
+  }
+```
+
+
 ## 📱 Controller Methods
 
 | Method | Description |
 |--------|-------------|
+| `retry()` | remake the last request if it failed for example |
 | `addItem(E item)` | Add item to the end of the list |
 | `addItemAt(int index, E item)` | Insert item at specific index |
 | `addAtBeginning(E item)` | Add item at the beginning |
