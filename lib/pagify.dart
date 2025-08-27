@@ -17,20 +17,21 @@ import 'helpers/errors.dart';
 import 'helpers/scroll_controller.dart';
 import 'helpers/status_stream.dart';
 part 'helpers/controller.dart';
+part 'helpers/ranking.dart';
 
-
-/// Defines the type of list ranking to use in [Pagify].
-enum _RankingType {
-  /// Displays items in a [GridView].
-  gridView,
-
-  /// Displays items in a [ListView].
-  listView
-}
 
 /// [FullResponse] is the type of the API response.
 /// [Model] is the type of each data item in the list.
 class Pagify<FullResponse, Model> extends StatefulWidget {
+  /// [padding] property in list and grid view
+  final EdgeInsetsGeometry padding;
+
+  /// [itemExtent] property in list and grid view
+  final double? itemExtent;
+
+  /// [cacheExtent] property in list and grid view
+  final double? cacheExtent;
+
   /// Called whenever the async call status changes.
   final FutureOr<void> Function(PagifyAsyncCallStatus status)? onUpdateStatus;
 
@@ -113,6 +114,8 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
     required this.mapper,
     required this.errorMapper,
     required this.itemBuilder,
+    this.padding = const EdgeInsets.all(0),
+    this.cacheExtent,
     this.listenToNetworkConnectivityChanges = false,
     this.onConnectivityChanged,
     this.onUpdateStatus,
@@ -131,7 +134,7 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
     this.scrollDirection,
     this.crossAxisCount,
     this.noConnectionText
-  }) : _rankingType = _RankingType.gridView, shrinkWrap = true,
+  }) : _rankingType = _RankingType.gridView, shrinkWrap = true, itemExtent = null,
         assert(errorMapper.errorWhenHttp.isNotNull || errorMapper.errorWhenDio.isNotNull),
         assert(
         (listenToNetworkConnectivityChanges && (onConnectivityChanged.isNull || onConnectivityChanged.isNotNull)) ||
@@ -145,6 +148,9 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
     required this.mapper,
     required this.errorMapper,
     required this.itemBuilder,
+    this.padding = const EdgeInsets.all(0),
+    this.itemExtent,
+    this.cacheExtent,
     this.listenToNetworkConnectivityChanges = false,
     this.onConnectivityChanged,
     this.onUpdateStatus,
@@ -455,7 +461,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   // }
 
   Widget _listRanking(){
-    if(widget._rankingType == _RankingType.gridView){
+    if(widget._rankingType.isGridView){
       return _gridView();
     }
     return _listView();
@@ -507,6 +513,9 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
     return Align(
       alignment: widget.isReverse? Alignment.bottomCenter : Alignment.topCenter,
       child: ListView.builder(
+          padding: widget.padding,
+          itemExtent: widget.itemExtent,
+          cacheExtent: widget.cacheExtent,
           scrollDirection: widget.scrollDirection?? Axis.vertical,
           shrinkWrap: widget.shrinkWrap?? false,
           controller: _scrollController,
@@ -529,6 +538,8 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
           if(widget.isReverse)
             _buildExtraItemSuchNoMoreDataOrLoading(),
           GridView.count(
+            padding: widget.padding,
+            cacheExtent: widget.cacheExtent,
             shrinkWrap: widget.shrinkWrap!,
             crossAxisCount: widget.crossAxisCount?? 2,
             mainAxisSpacing: widget.mainAxisSpacing?? 0.0,
