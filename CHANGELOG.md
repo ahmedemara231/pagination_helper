@@ -1,4 +1,4 @@
-## 0.2.0
+## 0.2.1
 
 * Added support for both ListView and GridView implementations
 * Implemented comprehensive error handling for network operations
@@ -14,3 +14,5 @@
 * remove unwanted toast and make it optional based developer needs
 * give BuildContext in important callBacks
 * add controller's retry function and onConnectivityChanged
+* enhance reverse pagination by add item extent
+* enhance performance by add cache extent
