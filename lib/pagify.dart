@@ -201,7 +201,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   void initState() {
     super.initState();
     widget.controller._initPagifyState(this);
-    _scrollController = RetainableScrollController().._initPagifyState(this);
+    _scrollController = RetainableScrollController();
     _asyncCallState = AsyncCallStatusInterceptor();
     _scrollController.addListener(() => _onScroll());
     if(widget.listenToNetworkConnectivityChanges){
@@ -305,6 +305,8 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
           _scrollController.restoreOffset(
               isReverse: widget.isReverse,
               subList: mapperResult.data,
+              totalCurrentItems: _itemsList.length,
+              itemExtent: widget.itemExtent
           );
         }
     );

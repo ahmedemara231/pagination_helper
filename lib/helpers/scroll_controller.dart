@@ -24,24 +24,37 @@ class RetainableScrollController extends ScrollController {
   void restoreOffset({
     required bool isReverse,
     required List subList,
+    required int totalCurrentItems,
+    double? itemExtent
   }) {
     // after request
     if (_currentOffset != null && hasClients) {
       jumpTo(
           isReverse ?
-          _getSubListHeight(subList) :
+          _getSubListHeight(
+            subList: subList,
+            totalCurrentItems: totalCurrentItems,
+            itemExtent: itemExtent
+          ) :
           _currentOffset!
       );
     }
   }
 
-  late _PagifyState _pagifyState;
-  void _initPagifyState(_PagifyState state){
-    _pagifyState = state;
-  }
+  double _getSubListHeight({
+    required List subList,
+    required int totalCurrentItems,
+    double? itemExtent
+  }) {
+    if(itemExtent.isNotNull){
+      return subList.length * itemExtent!;
+    }else{
+        // Calculate average item height from current list
+        double totalContentHeight = position.maxScrollExtent + position.viewportDimension;
+        double averageItemHeight = totalContentHeight / totalCurrentItems;
 
-  double _getSubListHeight(List subList) {
-    return subList.length * _pagifyState.widget.itemExtent!;
+        return subList.length * averageItemHeight;
+    }
   }
 
   // double _getSubListHeight(List subList, int totalCurrentItems) {
