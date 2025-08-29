@@ -7,7 +7,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:lottie/lottie.dart';
-import 'package:pagify/helpers/null_extension.dart';
+import 'package:pagify/helpers/extensions/null_extension.dart';
+import 'package:pagify/helpers/extensions/zero_extension.dart';
 import 'package:pagify/widgets/text.dart';
 import 'generated/assets.dart';
 import 'helpers/add_frame.dart';
@@ -136,6 +137,7 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
     this.noConnectionText
   }) : _rankingType = _RankingType.gridView, shrinkWrap = true, itemExtent = null,
         assert(errorMapper.errorWhenHttp.isNotNull || errorMapper.errorWhenDio.isNotNull),
+        assert(cacheExtent.isNotEqualZero),
         assert(
         (listenToNetworkConnectivityChanges && (onConnectivityChanged.isNull || onConnectivityChanged.isNotNull)) ||
             (!listenToNetworkConnectivityChanges && onConnectivityChanged.isNull)
@@ -172,6 +174,7 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
         crossAxisSpacing = null,
         mainAxisSpacing = null,
         assert(errorMapper.errorWhenHttp.isNotNull || errorMapper.errorWhenDio.isNotNull),
+        assert(itemExtent.isNotEqualZero && cacheExtent.isNotEqualZero),
         assert(
         (listenToNetworkConnectivityChanges && (onConnectivityChanged.isNull || onConnectivityChanged.isNotNull)) ||
             (!listenToNetworkConnectivityChanges && onConnectivityChanged.isNull)
@@ -494,7 +497,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   }
 
   Widget _buildItemBuilderWhenReverse({required int index, required List<Model> value}) {
-    if (index == 0 && (_shouldShowLoading || _shouldShowNoData)) {
+    if (index.isEqualZero && (_shouldShowLoading || _shouldShowNoData)) {
       return _buildExtraItemSuchNoMoreDataOrLoading();
     }
 
