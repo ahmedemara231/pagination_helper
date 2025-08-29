@@ -11,6 +11,9 @@ enum PagifyAsyncCallStatus {
   /// Indicates that the request was successful.
   success,
 
+  /// Indicates that there is changes happens in list.
+  makeChangesInList,
+
   /// Indicates that an error occurred during the request.
   error,
 

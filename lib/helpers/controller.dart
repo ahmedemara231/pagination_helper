@@ -67,7 +67,7 @@ class PagifyController<E> {
   /// after the data changes.
   void _makeActionOnDataChanging() =>
       _pagifyState?._asyncCallState.updateAllStatues(
-        PagifyAsyncCallStatus.success,
+        PagifyAsyncCallStatus.makeChangesInList,
       );
 
   /// Updates the internal item list with [newItems].

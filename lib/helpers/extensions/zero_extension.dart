@@ -1,12 +1,12 @@
-/// isNull extension to show if this [object] is null or not
+/// ZeroChecker extension to show if this [num] is zero or not
 extension ZeroChecker on num?{
 
-  /// isNull function to show if this [object] is null or not
+  /// ZeroChecker extension to show if this [num] is zero or not
   bool get isEqualZero{
     return this == 0;
   }
 
-  /// isNull function to show if this [object] is not null or not
+  /// ZeroChecker extension to show if this [num] is not zero or not
   bool get isNotEqualZero{
     return this != 0;
   }
