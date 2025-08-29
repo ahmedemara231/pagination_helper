@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+part of '../pagify.dart';
+
 
 /// pagify scroll controller
 class RetainableScrollController extends ScrollController {
@@ -32,10 +33,14 @@ class RetainableScrollController extends ScrollController {
     }
   }
 
+  late _PagifyState _pagifyState;
+  void _initPagifyState(_PagifyState state){
+    _pagifyState = state;
+  }
+
   double _getSubListHeight(List subList, int totalCurrentItems) {
     if (!hasClients || totalCurrentItems == 0) {
-      // Fallback to estimated height per item
-      return subList.length * 60.0; // Adjust based on your item design
+      return subList.length * (_pagifyState.widget.itemExtent?? 60.0);
     }
 
     // Calculate average item height from current list

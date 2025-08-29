@@ -14,10 +14,10 @@ import 'helpers/add_frame.dart';
 import 'helpers/custom_bool.dart';
 import 'helpers/data_and_pagination_data.dart';
 import 'helpers/errors.dart';
-import 'helpers/scroll_controller.dart';
 import 'helpers/status_stream.dart';
 part 'helpers/controller.dart';
 part 'helpers/ranking.dart';
+part 'helpers/scroll_controller.dart';
 
 
 /// [FullResponse] is the type of the API response.
@@ -201,8 +201,8 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   void initState() {
     super.initState();
     widget.controller._init(this);
+    _scrollController = RetainableScrollController().._initPagifyState(this);
     _asyncCallState = AsyncCallStatusInterceptor();
-    _scrollController = RetainableScrollController();
     _scrollController.addListener(() => _onScroll());
     if(widget.listenToNetworkConnectivityChanges){
       _listenToNetworkChanges();
