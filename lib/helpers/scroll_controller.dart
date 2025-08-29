@@ -21,15 +21,17 @@ class RetainableScrollController extends ScrollController {
   }
 
   /// restore scroll offset after request
-  void restoreOffset(
-      {required bool isReverse,
-      required List subList,
-      required int totalCurrentItems}) {
+  void restoreOffset({
+    required bool isReverse,
+    required List subList,
+  }) {
     // after request
     if (_currentOffset != null && hasClients) {
-      jumpTo(isReverse
-          ? _getSubListHeight(subList, totalCurrentItems)
-          : _currentOffset!);
+      jumpTo(
+          isReverse ?
+          _getSubListHeight(subList) :
+          _currentOffset!
+      );
     }
   }
 
@@ -38,16 +40,19 @@ class RetainableScrollController extends ScrollController {
     _pagifyState = state;
   }
 
-  double _getSubListHeight(List subList, int totalCurrentItems) {
-    if (!hasClients || totalCurrentItems == 0) {
-      return subList.length * (_pagifyState.widget.itemExtent?? 60.0);
-    }
-
-    // Calculate average item height from current list
-    double totalContentHeight =
-        position.maxScrollExtent + position.viewportDimension;
-    double averageItemHeight = totalContentHeight / totalCurrentItems;
-
-    return subList.length * averageItemHeight;
+  double _getSubListHeight(List subList) {
+    return subList.length * _pagifyState.widget.itemExtent!;
   }
+
+  // double _getSubListHeight(List subList, int totalCurrentItems) {
+  //   // if (!hasClients || totalCurrentItems == 0) {
+  //   //   return subList.length * 60.0;
+  //   // }
+  //
+  //   // Calculate average item height from current list
+  //   double totalContentHeight = position.maxScrollExtent + position.viewportDimension;
+  //   double averageItemHeight = totalContentHeight / totalCurrentItems;
+  //
+  //   return subList.length * _pagifyState.widget.itemExtent!;
+  // }
 }

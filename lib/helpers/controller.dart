@@ -7,7 +7,7 @@ part of '../pagify.dart';
 /// when changes occur.
 class PagifyController<E> {
   late _PagifyState? _pagifyState;
-  void _init(_PagifyState state){
+  void _initPagifyState(_PagifyState state){
     _pagifyState = state;
   }
 
