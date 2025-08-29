@@ -467,7 +467,11 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   Widget _listRanking(){
     if(widget._rankingType.isGridView){
       return _gridView();
+
+    }else if(widget._rankingType.isListView){
+      return _listView();
     }
+
     return _listView();
   }
 
