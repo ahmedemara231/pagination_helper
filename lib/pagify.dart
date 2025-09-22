@@ -48,6 +48,9 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
   /// Maps network and HTTP errors to messages.
   final PagifyErrorMapper errorMapper;
 
+  /// Callback to handle scroll position changes.
+  final void Function(ScrollPosition position)? onScrollPositionChanged;
+
   /// listen to network connectivity changes
   final bool listenToNetworkConnectivityChanges;
 
@@ -115,6 +118,7 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
     required this.mapper,
     required this.errorMapper,
     required this.itemBuilder,
+    this.onScrollPositionChanged,
     this.padding = const EdgeInsets.all(0),
     this.cacheExtent,
     this.listenToNetworkConnectivityChanges = false,
@@ -150,6 +154,7 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
     required this.mapper,
     required this.errorMapper,
     required this.itemBuilder,
+    this.onScrollPositionChanged,
     this.padding = const EdgeInsets.all(0),
     this.itemExtent,
     this.cacheExtent,
@@ -269,7 +274,9 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
     }
   }
 
+  void _listenToScrollPositionChanges() => widget.onScrollPositionChanged?.call(_scrollController.position);
   Future<void> _startScrolling() async{
+    _listenToScrollPositionChanges();
     switch(widget.isReverse){
       case true:
         if (_scrollController.position.pixels ==
@@ -288,33 +295,26 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
     }
   }
 
-  Future<void> _fetchDataWhenScrollUp() async{
-    await _fetchDataWhileScrolling((items) =>
-        widget.controller._updateItems(newItems: items, isReverse: true)
-    );
-  }
+  Future<void> _fetchDataWhenScrollUp() async => await _fetchDataWhileScrolling((items) =>
+      widget.controller._updateItems(newItems: items, isReverse: true)
+  );
 
-  Future<void> _fetchDataWhenScrollDown() async{
-    await _fetchDataWhileScrolling((items) =>
-        widget.controller._updateItems(newItems: items, isReverse: false)
-    );
-  }
+  Future<void> _fetchDataWhenScrollDown() async => await _fetchDataWhileScrolling((items) =>
+      widget.controller._updateItems(newItems: items, isReverse: false)
+  );
 
-  Future<void> _fetchDataWhileScrolling(void Function(List<Model> items) onUpdate)async{
-    await _fetchDataAndMapping(
-        whenEnd: (mapperResult) async{
-          onUpdate(mapperResult.data);
-          await widget.onSuccess?.call(context, _itemsList);
-          _scrollController.restoreOffset(
-              isReverse: widget.isReverse,
-              subList: mapperResult.data,
-              totalCurrentItems: _itemsList.length,
-              itemExtent: widget.itemExtent
-          );
-        }
-    );
-  }
-
+  Future<void> _fetchDataWhileScrolling(void Function(List<Model> items) onUpdate)async => await _fetchDataAndMapping(
+      whenEnd: (mapperResult) async{
+        onUpdate(mapperResult.data);
+        await widget.onSuccess?.call(context, _itemsList);
+        _scrollController.restoreOffset(
+            isReverse: widget.isReverse,
+            subList: mapperResult.data,
+            totalCurrentItems: _itemsList.length,
+            itemExtent: widget.itemExtent
+        );
+      }
+  );
 
   Future<void> _fetchDataAndMapping({
     FutureOr<void> Function()? whenStart,
@@ -352,19 +352,14 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   })async{
     if(connectivityResult.contains(ConnectivityResult.none)){
       await onDisconnected.call();
-
     }else{
       await onConnected.call();
     }
   }
 
-  String get _getNoInternetText{
-    return widget.noConnectionText?? 'Check your internet connection';
-  }
+  String get _getNoInternetText => widget.noConnectionText?? 'Check your internet connection';
 
-  PagifyNetworkException get _getNetworkException{
-    return PagifyNetworkException(_getNoInternetText);
-  }
+  PagifyNetworkException get _getNetworkException => PagifyNetworkException(_getNoInternetText);
 
   Future<FullResponse> _callApi(Future<FullResponse> Function(BuildContext context, int currentPage) asyncCall)async{
     late final FullResponse waitingResult;
@@ -384,8 +379,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
 
   final CustomBool _isFirstFireToInternetInterceptor = CustomBool(true);
 
-  FutureOr<void> _checkIsFirstTime(CustomBool val,
-      {required FutureOr<void> Function() onNotFirstTime}) async{
+  FutureOr<void> _checkIsFirstTime(CustomBool val, {required FutureOr<void> Function() onNotFirstTime}) async{
     if(val.isFirst){
       val.isFirst = false;
       return;
@@ -396,38 +390,38 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   }
 
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
-  void _listenToNetworkChanges(){
-    _connectivitySubscription = _connectivity.onConnectivityChanged.listen((networkStatus){
-      _checkIsFirstTime(
-          _isFirstFireToInternetInterceptor,
-          onNotFirstTime: () => _checkAndMake(
-              connectivityResult: networkStatus,
-              onConnected: () async{
-                _asyncCallState.setLastStatusAsCurrent(
-                    ifLastIsLoading: () async {
-                      if(_currentPage == 1){
-                        await _fetchDataFirstTimeOrRefresh();
-                      }else{
-                        if(widget.isReverse){
-                          widget.controller.moveToMaxTop();
-
+  void _listenToNetworkChanges() =>
+      _connectivitySubscription = _connectivity.onConnectivityChanged.listen((networkStatus){
+        _checkIsFirstTime(
+            _isFirstFireToInternetInterceptor,
+            onNotFirstTime: () => _checkAndMake(
+                connectivityResult: networkStatus,
+                onConnected: () async{
+                  _asyncCallState.setLastStatusAsCurrent(
+                      ifLastIsLoading: () async {
+                        if(_currentPage == 1){
+                          await _fetchDataFirstTimeOrRefresh();
                         }else{
-                          widget.controller.moveToMaxBottom();
+                          if(widget.isReverse){
+                            widget.controller.moveToMaxTop();
+
+                          }else{
+                            widget.controller.moveToMaxBottom();
+                          }
+                          _onScroll();
                         }
-                        _onScroll();
                       }
-                    }
-                );
-                await widget.onConnectivityChanged?.call(true);
-              },
-              onDisconnected: ()async {
-                _errorHandler(_getNetworkException);
-                await widget.onConnectivityChanged?.call(false);
-              }
-          )
-      );
-    });
-  }
+                  );
+                  await widget.onConnectivityChanged?.call(true);
+                },
+                onDisconnected: ()async {
+                  _errorHandler(_getNetworkException);
+                  await widget.onConnectivityChanged?.call(false);
+                }
+            )
+        );
+      });
+
 
   Future<void> _fetchDataFirstTimeOrRefresh() async {
     try {
@@ -492,13 +486,9 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
     }
   }
 
-  Widget _buildItemBuilder({required int index, required List<Model> value}){
-    if (index < value.length) {
-      return widget.itemBuilder(context, value, index, value[index]);
-    } else {
-      return _buildExtraItemSuchNoMoreDataOrLoading();
-    }
-  }
+  Widget _buildItemBuilder({required int index, required List<Model> value}) => index < value.length?
+  widget.itemBuilder(context, value, index, value[index]) :
+  _buildExtraItemSuchNoMoreDataOrLoading();
 
   Widget _buildItemBuilderWhenReverse({required int index, required List<Model> value}) {
     if (index.isEqualZero && (_shouldShowLoading || _shouldShowNoData)) {
@@ -517,167 +507,110 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
     }
   }
 
-  Widget _listView() {
-    return Align(
-      alignment: widget.isReverse? Alignment.bottomCenter : Alignment.topCenter,
-      child: ListView.builder(
-          padding: widget.padding,
-          itemExtent: widget.itemExtent,
-          cacheExtent: widget.cacheExtent,
-          scrollDirection: widget.scrollDirection?? Axis.vertical,
-          shrinkWrap: widget.shrinkWrap?? false,
-          controller: _scrollController,
-          itemCount: _buildItemCount(_itemsList),
-          itemBuilder: (context, index) => widget.isReverse?
-          _buildItemBuilderWhenReverse(index: index, value: _itemsList) :
-          _buildItemBuilder(index: index, value: _itemsList)
-      ),
-    );
-  }
+  Widget _listView() => Align(
+    alignment: widget.isReverse? Alignment.bottomCenter : Alignment.topCenter,
+    child: ListView.builder(
+        padding: widget.padding,
+        itemExtent: widget.itemExtent,
+        cacheExtent: widget.cacheExtent,
+        scrollDirection: widget.scrollDirection?? Axis.vertical,
+        shrinkWrap: widget.shrinkWrap?? false,
+        controller: _scrollController,
+        itemCount: _buildItemCount(_itemsList),
+        itemBuilder: (context, index) => widget.isReverse?
+        _buildItemBuilderWhenReverse(index: index, value: _itemsList) :
+        _buildItemBuilder(index: index, value: _itemsList)
+    ),
+  );
 
-  Widget _gridView() {
-    return SingleChildScrollView(
-      controller: _scrollController,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: widget.isReverse?
-        MainAxisAlignment.end : MainAxisAlignment.start,
-        children: [
-          if(widget.isReverse)
-            _buildExtraItemSuchNoMoreDataOrLoading(),
-          GridView.count(
-            padding: widget.padding,
-            cacheExtent: widget.cacheExtent,
-            shrinkWrap: widget.shrinkWrap!,
-            crossAxisCount: widget.crossAxisCount?? 2,
-            mainAxisSpacing: widget.mainAxisSpacing?? 0.0,
-            crossAxisSpacing: widget.crossAxisSpacing?? 0.0,
-            childAspectRatio: widget.childAspectRatio?? 1,
-            scrollDirection: widget.scrollDirection?? Axis.vertical,
-            physics: const NeverScrollableScrollPhysics(),
-            children: List.generate(
-              _itemsList.length,
-                  (index) => widget.itemBuilder(context, _itemsList, index, _itemsList[index]),
-            ),
+  Widget _gridView() => SingleChildScrollView(
+    controller: _scrollController,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisAlignment: widget.isReverse?
+      MainAxisAlignment.end : MainAxisAlignment.start,
+      children: [
+        if(widget.isReverse)
+          _buildExtraItemSuchNoMoreDataOrLoading(),
+        GridView.count(
+          padding: widget.padding,
+          cacheExtent: widget.cacheExtent,
+          shrinkWrap: widget.shrinkWrap!,
+          crossAxisCount: widget.crossAxisCount?? 2,
+          mainAxisSpacing: widget.mainAxisSpacing?? 0.0,
+          crossAxisSpacing: widget.crossAxisSpacing?? 0.0,
+          childAspectRatio: widget.childAspectRatio?? 1,
+          scrollDirection: widget.scrollDirection?? Axis.vertical,
+          physics: const NeverScrollableScrollPhysics(),
+          children: List.generate(
+            _itemsList.length,
+                (index) => widget.itemBuilder(context, _itemsList, index, _itemsList[index]),
           ),
-          if(!widget.isReverse)
-            _buildExtraItemSuchNoMoreDataOrLoading(),
-        ],
-      ),
-    );
-  }
+        ),
+        if(!widget.isReverse)
+          _buildExtraItemSuchNoMoreDataOrLoading(),
+      ],
+    ),
+  );
+
   List<Model> get _itemsList => List.from(widget.controller._items.value);
   bool get _itemsIsNotEmpty => _itemsList.isNotEmpty;
   bool get _itemsIsEmpty => _itemsList.isEmpty;
 
-  Widget get _buildLoadingView{
-    if(_itemsIsEmpty){
-      return _loadingWidget;
-    }else{
-      return _listRanking();
-    }
-  }
+  Widget get _buildLoadingView => _itemsIsEmpty?
+  _loadingWidget : _listRanking();
 
-  Widget get _loadingWidget{
-    switch(widget.loadingBuilder){
-      case null:
-        return const Center(child: SizedBox.square(
-            dimension: 30,
-            child: CircularProgressIndicator.adaptive()
-        )
-        );
 
-      default:
-        return widget.loadingBuilder!;
-    }
-  }
+  Widget get _loadingWidget => widget.loadingBuilder.isNull?
+     const Center(child: SizedBox.square(
+        dimension: 30,
+        child: CircularProgressIndicator.adaptive()
+    )) :  widget.loadingBuilder!;
 
-  Widget get _buildErrorWidget{
-    if(_itemsIsNotEmpty){
-      return _showListOrErrorBuilderBasedUserNeeds;
 
-    }else{
-      return _buildErrorViewBasedErrorBuilder;
-    }
-  }
 
-  Widget get _showListOrErrorBuilderBasedUserNeeds{
-    if(widget.ignoreErrorBuilderWhenErrorOccursAndListIsNotEmpty){
-      return _listRanking();
-    }
-    return _buildErrorViewBasedErrorBuilder;
-  }
+  Widget get _buildErrorWidget => _itemsIsNotEmpty?
+  _showListOrErrorBuilderBasedUserNeeds : _buildErrorViewBasedErrorBuilder;
+
+
+  Widget get _showListOrErrorBuilderBasedUserNeeds => widget.ignoreErrorBuilderWhenErrorOccursAndListIsNotEmpty?
+  _listRanking() : _buildErrorViewBasedErrorBuilder;
   
-  Widget get _buildErrorViewBasedErrorBuilder{
-    switch(widget.errorBuilder){
-      case null:
-        return _buildDefaultErrorView;
+  Widget get _buildErrorViewBasedErrorBuilder => widget.errorBuilder.isNull?
+  _buildDefaultErrorView : widget.errorBuilder!.call(_pagifyException);
 
-      default:
-        return widget.errorBuilder!.call(_pagifyException);
-    }
-  }
+  Widget get _buildDefaultErrorView => _asyncCallState.currentState.isNetworkError?
+  Column(
+    children: [
+      Lottie.asset(Assets.lottieNoInternet),
+      const SizedBox(height: 10),
+      Text(
+          _getNoInternetText,
+          style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500)
+      )
+    ],
+  ) : Column(
+    children: [
+      Lottie.asset(Assets.lottieApiError),
+      const SizedBox(height: 10),
+      Text(
+          _errorMsg,
+          style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500)
+      )
+    ],
+  );
 
-  Widget get _buildDefaultErrorView{
-    if(_asyncCallState.currentState.isNetworkError){
-      return Column(
-        children: [
-          Lottie.asset(Assets.lottieNoInternet),
-          const SizedBox(height: 10),
-          Text(
-              _getNoInternetText,
-              style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500)
-          )
-        ],
-      );
-    }
 
-    return Column(
-      children: [
-        Lottie.asset(Assets.lottieApiError),
-        const SizedBox(height: 10),
-        Text(
-            _errorMsg,
-            style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500)
-        )
-      ],
-    );
-  }
+  Widget get _buildSuccessWidget => _itemsIsNotEmpty? _listRanking() : _buildEmptyListView;
 
-  Widget get _buildSuccessWidget{
-    if(_itemsIsNotEmpty){
-      return _listRanking();
-
-    }else{
-      return _buildEmptyListView;
-    }
-  }
-
-  Widget get _buildEmptyListView{
-    if(widget.emptyListView.isNotNull){
-      return widget.emptyListView!;
-    }
-
-    return Column(
-      children: [
-        Lottie.asset(Assets.lottieNoData),
-        const SizedBox(height: 10),
-        Text('There is no data right now!')
-      ],
-    );
-  }
-
-  // Future<void> _manageRefreshIndicator()async{
-  //   if(widget.isReverse){
-  //     if(currentPage < totalPages){
-  //       Future(() => null);
-  //     }else{
-  //       await _onScroll(isRefresh: true);
-  //     }
-  //   }else{
-  //     await _onScroll(isRefresh: true);
-  //   }
-  // }
+  Widget get _buildEmptyListView => widget.emptyListView.isNotNull?
+  widget.emptyListView! : Column(
+    children: [
+      Lottie.asset(Assets.lottieNoData),
+      const SizedBox(height: 10),
+      Text('There is no data right now!')
+    ],
+  );
 
   @override
   Widget build(BuildContext context) {
