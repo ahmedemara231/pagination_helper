@@ -48,6 +48,9 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
   /// Maps network and HTTP errors to messages.
   final PagifyErrorMapper errorMapper;
 
+  /// Callback to handle scroll position changes.
+  final void Function(ScrollPosition position)? onScrollPositionChanged;
+
   /// listen to network connectivity changes
   final bool listenToNetworkConnectivityChanges;
 
@@ -115,6 +118,7 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
     required this.mapper,
     required this.errorMapper,
     required this.itemBuilder,
+    this.onScrollPositionChanged,
     this.padding = const EdgeInsets.all(0),
     this.cacheExtent,
     this.listenToNetworkConnectivityChanges = false,
@@ -150,6 +154,7 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
     required this.mapper,
     required this.errorMapper,
     required this.itemBuilder,
+    this.onScrollPositionChanged,
     this.padding = const EdgeInsets.all(0),
     this.itemExtent,
     this.cacheExtent,
@@ -269,7 +274,9 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
     }
   }
 
+  void _listenToScrollPositionChanges() => widget.onScrollPositionChanged?.call(_scrollController.position);
   Future<void> _startScrolling() async{
+    _listenToScrollPositionChanges();
     switch(widget.isReverse){
       case true:
         if (_scrollController.position.pixels ==
