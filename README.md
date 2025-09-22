@@ -37,7 +37,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  pagify: ^0.2.2
+  pagify: ^0.2.3
 ```
 
 Then run:
