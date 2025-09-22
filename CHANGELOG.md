@@ -1,4 +1,4 @@
-## 0.2.2
+## 0.2.3
 
 * Added support for both ListView and GridView implementations
 * Implemented comprehensive error handling for network operations
@@ -16,3 +16,4 @@
 * add controller's retry function and onConnectivityChanged
 * enhance reverse pagination by add item extent
 * enhance performance by add cache extent
+* add onScrollPositionChanged property
