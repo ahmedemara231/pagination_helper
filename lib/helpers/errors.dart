@@ -19,17 +19,60 @@ class PagifyNetworkException extends PagifyException {
 /// api request [Exception] happens when there is request exception like [DioException]
 class ApiRequestException extends PagifyException {
   /// the constructor which accepts a [String] message
-  ApiRequestException(super.msg);
+  ApiRequestException(this.pagifyFailure) : super('');
+
+  /// [PagifyFailure] instance
+  final PagifyFailure pagifyFailure;
 }
 
 /// error mapper which extract the api [Exception] message
 class PagifyErrorMapper {
   /// [Dio] Package error mapper which extract the [DioException] message
-  String Function(DioException e)? errorWhenDio;
+  PagifyFailure Function(DioException e)? errorWhenDio;
 
   /// [Http] Package error mapper which extract the [HttpException] message
-  String Function(HttpException e)? errorWhenHttp;
+  PagifyFailure Function(HttpException e)? errorWhenHttp;
 
   /// the constructor which accepts two [Function]
   PagifyErrorMapper({this.errorWhenDio, this.errorWhenHttp});
 }
+
+/// error mapping result
+class PagifyFailure {
+
+  /// error msg [String]
+  final String? errorMsg;
+  /// status code [int]
+  final int? statusCode;
+  /// status msg [String]
+  final String? statusMsg;
+
+  /// the constructor which accepts a three params
+  PagifyFailure({
+    this.errorMsg,
+    this.statusCode,
+    this.statusMsg,
+  });
+
+  /// initial state
+  factory PagifyFailure.initial() =>
+      PagifyFailure(
+        errorMsg: '',
+        statusCode: 0,
+        statusMsg: '',
+      );
+
+  /// copyWith function
+  PagifyFailure copyWith({
+    String? errorMsg,
+    int? statusCode,
+    String? statusMsg,
+  }) {
+    return PagifyFailure(
+      errorMsg: errorMsg ?? this.errorMsg,
+      statusCode: statusCode ?? this.statusCode,
+      statusMsg: statusMsg ?? this.statusMsg,
+    );
+  }
+}
+

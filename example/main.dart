@@ -68,8 +68,12 @@ class _PagifyExampleState extends State<PagifyExample> {
               )
           ),
           errorMapper: PagifyErrorMapper(
-            errorWhenDio: (e) => 'e.response?.data['']', // if you using Dio
-            errorWhenHttp: (e) => 'e.message', // if you using Http
+            errorWhenDio: (e) => PagifyFailure(
+              errorMsg: e.response?.data['errorMsg'],
+              statusCode: e.response?.statusCode,
+              statusMsg: e.response?.statusMessage,
+            ), // if you using Dio
+            // errorWhenHttp: (e) => PagifyFailure(), // if you using Http
           ),
           itemBuilder: (context, data, index, element) => Center(
               child: InkWell(
