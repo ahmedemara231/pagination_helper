@@ -245,10 +245,10 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
 
   FutureOr<void> _errorHandler(Exception e){
     if(e is PagifyNetworkException){
-      _asyncCallState.updateAllStatues(PagifyAsyncCallStatus.networkError);
       _pagifyException = _getPagifyException(e);
+      _asyncCallState.updateAllStatues(PagifyAsyncCallStatus.networkError);
+
     }else{
-      _asyncCallState.updateAllStatues(PagifyAsyncCallStatus.error);
       if(e is DioException){
         _failure = widget.errorMapper.errorWhenDio?.call(e)?? PagifyApiRequestException.initial();
 
@@ -265,6 +265,8 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
               pagifyFailure: _failure.pagifyFailure
           )
       );
+
+      _asyncCallState.updateAllStatues(PagifyAsyncCallStatus.error);
     }
 
     _logError(e);
