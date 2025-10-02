@@ -467,20 +467,33 @@ enum PagifyAsyncCallStatus {
 
 ```dart
 PagifyErrorMapper(
-  errorWhenDio: (DioException e) {
-    switch (e.type) {
-      case DioExceptionType.connectionTimeout:
-        return 'Connection timeout. Please try again.';
-      case DioExceptionType.receiveTimeout:
-        return 'Server response timeout.';
-      case DioExceptionType.badResponse:
-        return 'Server returned ${e.response?.statusCode}';
-      default:
-        return 'Network error occurred.';
-    }
-  },
-  errorWhenHttp: (HttpException e) => 'HTTP Error: ${e.message}',
-)
+            errorWhenDio: (e) {
+              String? msg = '';
+              switch (e.type) {
+                case DioExceptionType.connectionTimeout:
+                  msg = 'Connection timeout. Please try again.';
+
+                case DioExceptionType.receiveTimeout:
+                  msg = 'Server response timeout.';
+
+                case DioExceptionType.badResponse:
+                  msg = 'Server returned ${e.response?.statusCode}';
+
+                default:
+                  msg = e.response?.data.toString();
+              }
+
+              return PagifyApiRequestException(
+                msg ?? 'network error occur',
+                pagifyFailure: RequestFailureData(
+                  statusCode: e.response?.statusCode,
+                  statusMsg: e.response?.statusMessage,
+                ),
+              );
+            } // if you using Dio
+
+            // errorWhenHttp: (e) => PagifyApiRequestException(), // if you using Http
+          ),
 ```
 
 ## 🤝 Contributing
