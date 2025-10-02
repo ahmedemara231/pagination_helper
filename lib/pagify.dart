@@ -479,7 +479,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   bool get _hasMoreData => _currentPage <= _totalPages;
   bool get _shouldShowLoading => _hasMoreData && _asyncCallState.currentState.isLoading;
   bool get _shouldShowNoData => widget.showNoDataAlert && !_hasMoreData;
-  final Widget _noMoreDataText = const AppText('No more data', textAlign: TextAlign.center, color: Colors.grey);
+  final Widget _noMoreDataText = const PagifyText('No more data', textAlign: TextAlign.center, color: Colors.grey);
 
   Widget _buildExtraItemSuchNoMoreDataOrLoading({Widget? defaultWidget}){
     if(_shouldShowNoData){
@@ -629,7 +629,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
           activeStateCallBack: (snapshot) => snapshot.hasData?
           snapshot.data!.isError || snapshot.data!.isNetworkError?
           _buildErrorWidget : _asyncCallState.currentState.isLoading?
-          _buildLoadingView : _buildSuccessWidget : const AppText('the stream throws an exception'),
+          _buildLoadingView : _buildSuccessWidget : const PagifyText('the stream throws an exception'),
         )
     );
   }
@@ -662,7 +662,7 @@ class SnapshotHandler extends StatelessWidget {
         return loadingWidget;
 
       case ConnectionState.none:
-        return const AppText('no stream connection!');
+        return const PagifyText('no stream connection!');
 
 
       default:

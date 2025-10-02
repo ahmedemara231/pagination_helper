@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// pagify text widget
-class AppText extends StatelessWidget {
+class PagifyText extends StatelessWidget {
   /// required text [String]
   final String text;
 
@@ -27,7 +27,7 @@ class AppText extends StatelessWidget {
   final double? height;
 
   /// pagify text widget constructor
-  const AppText(
+  const PagifyText(
     this.text, {
     super.key,
     this.color,

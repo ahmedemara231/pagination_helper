@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:pagify/helpers/data_and_pagination_data.dart';
 import 'package:pagify/helpers/errors.dart';
@@ -68,13 +69,30 @@ class _PagifyExampleState extends State<PagifyExample> {
               )
           ),
           errorMapper: PagifyErrorMapper(
-            errorWhenDio: (e) => PagifyApiRequestException(
-              e.response?.data['errorMsg'],
-              pagifyFailure: RequestFailureData(
-                statusCode: e.response?.statusCode,
-                statusMsg: e.response?.statusMessage,
-              ),
-            ), // if you using Dio
+            errorWhenDio: (e) {
+              String? msg = '';
+              switch (e.type) {
+                case DioExceptionType.connectionTimeout:
+                  msg = 'Connection timeout. Please try again.';
+
+                case DioExceptionType.receiveTimeout:
+                  msg = 'Server response timeout.';
+
+                case DioExceptionType.badResponse:
+                  msg = 'Server returned ${e.response?.statusCode}';
+
+                default:
+                  msg = e.response?.data.toString();
+              }
+
+              return PagifyApiRequestException(
+                msg ?? 'network error occur',
+                pagifyFailure: RequestFailureData(
+                  statusCode: e.response?.statusCode,
+                  statusMsg: e.response?.statusMessage,
+                ),
+              );
+            } // if you using Dio
 
             // errorWhenHttp: (e) => PagifyApiRequestException(), // if you using Http
           ),
@@ -84,7 +102,7 @@ class _PagifyExampleState extends State<PagifyExample> {
                     log('enter here');
                     _pagifyController.addAtBeginning('otieuytoiuet');
                   },
-                  child: AppText(element, fontSize: 20,)
+                  child: PagifyText(element, fontSize: 20,)
               )
           ),
           onLoading: () => log('loading now ...!'),
@@ -116,7 +134,7 @@ class _PagifyExampleState extends State<PagifyExample> {
           errorBuilder: (e) => Container(
               color: e is PagifyNetworkException?
               Colors.green: Colors.red,
-              child: AppText(e.msg)
+              child: PagifyText(e.msg)
           ),
 
           listenToNetworkConnectivityChanges: true,
