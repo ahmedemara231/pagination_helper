@@ -70,7 +70,7 @@ class _PagifyExampleState extends State<PagifyExample> {
           errorMapper: PagifyErrorMapper(
             errorWhenDio: (e) => PagifyApiRequestException(
               e.response?.data['errorMsg'],
-              pagifyFailure: PagifyFailure(
+              pagifyFailure: RequestFailureData(
                 statusCode: e.response?.statusCode,
                 statusMsg: e.response?.statusMessage,
               ),

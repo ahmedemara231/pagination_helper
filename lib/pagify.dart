@@ -597,11 +597,11 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
       )
     ],
   ) : Column(
+    spacing: 10,
     children: [
       Lottie.asset(Assets.lottieApiError),
-      const SizedBox(height: 10),
       Text(
-          _failure.msg?? '',
+          _failure.msg,
           style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500)
       )
     ],

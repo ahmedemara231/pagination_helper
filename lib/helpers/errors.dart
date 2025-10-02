@@ -21,19 +21,19 @@ class PagifyApiRequestException extends PagifyException {
   /// the constructor which accepts a [String] message
   PagifyApiRequestException(super.msg, {required this.pagifyFailure});
 
-  /// [PagifyFailure] instance
-  final PagifyFailure pagifyFailure;
+  /// [RequestFailureData] instance
+  final RequestFailureData pagifyFailure;
 
   /// initial constructor to [PagifyApiRequestException]
   factory PagifyApiRequestException.initial() => PagifyApiRequestException(
       '',
-      pagifyFailure: PagifyFailure.initial()
+      pagifyFailure: RequestFailureData.initial()
   );
 
   /// copyWith function
   PagifyApiRequestException copyWith({
     String? msg,
-    PagifyFailure? pagifyFailure,
+    RequestFailureData? pagifyFailure,
 }) => PagifyApiRequestException(
       msg?? this.msg,
       pagifyFailure: pagifyFailure?? this.pagifyFailure
@@ -53,29 +53,29 @@ class PagifyErrorMapper {
 }
 
 /// error mapping result
-class PagifyFailure {
+class RequestFailureData {
   /// status code [int]
   final int? statusCode;
   /// status msg [String]
   final String? statusMsg;
 
   /// the constructor which accepts a three params
-  PagifyFailure({
+  RequestFailureData({
     this.statusCode,
     this.statusMsg,
   });
 
   /// initial state
-  factory PagifyFailure.initial() => PagifyFailure(
+  factory RequestFailureData.initial() => RequestFailureData(
     statusCode: 0,
     statusMsg: '',
   );
 
   /// copyWith function
-  PagifyFailure copyWith({
+  RequestFailureData copyWith({
     int? statusCode,
     String? statusMsg,
-  }) => PagifyFailure(
+  }) => RequestFailureData(
     statusCode: statusCode ?? this.statusCode,
     statusMsg: statusMsg ?? this.statusMsg,
   );
