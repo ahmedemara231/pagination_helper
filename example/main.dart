@@ -68,12 +68,15 @@ class _PagifyExampleState extends State<PagifyExample> {
               )
           ),
           errorMapper: PagifyErrorMapper(
-            errorWhenDio: (e) => PagifyFailure(
-              errorMsg: e.response?.data['errorMsg'],
-              statusCode: e.response?.statusCode,
-              statusMsg: e.response?.statusMessage,
+            errorWhenDio: (e) => PagifyApiRequestException(
+              e.response?.data['errorMsg'],
+              pagifyFailure: PagifyFailure(
+                statusCode: e.response?.statusCode,
+                statusMsg: e.response?.statusMessage,
+              ),
             ), // if you using Dio
-            // errorWhenHttp: (e) => PagifyFailure(), // if you using Http
+
+            // errorWhenHttp: (e) => PagifyApiRequestException(), // if you using Http
           ),
           itemBuilder: (context, data, index, element) => Center(
               child: InkWell(
@@ -92,13 +95,17 @@ class _PagifyExampleState extends State<PagifyExample> {
             if(count > 3){
               return;
             }
+
             _pagifyController.retry();
             log('page : $page');
+
             if(e is PagifyNetworkException){
               log('check your internet connection');
 
-            }else if(e is ApiRequestException){
-              log('check your server ${e.msg}');
+            }else if(e is PagifyApiRequestException){
+              log(e.msg);
+              log(e.pagifyFailure.statusCode.toString());
+              log(e.pagifyFailure.statusMsg.toString());
 
             }else{
               log('other error ...!');

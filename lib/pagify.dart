@@ -229,7 +229,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   }
 
   late PagifyException _pagifyException;
-  late PagifyFailure _failure;
+  late PagifyApiRequestException _failure;
 
   void _logError(Exception e){
     if(e is DioException){
@@ -250,16 +250,21 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
     }else{
       _asyncCallState.updateAllStatues(PagifyAsyncCallStatus.error);
       if(e is DioException){
-        _failure = widget.errorMapper.errorWhenDio?.call(e)?? PagifyFailure.initial();
+        _failure = widget.errorMapper.errorWhenDio?.call(e)?? PagifyApiRequestException.initial();
 
       }else if(e is HttpException){
-        _failure = widget.errorMapper.errorWhenHttp?.call(e)?? PagifyFailure.initial();
+        _failure = widget.errorMapper.errorWhenHttp?.call(e)?? PagifyApiRequestException.initial();
 
       }else{
-        _failure = PagifyFailure.initial().copyWith(errorMsg: 'There is error occur $e');
+        _failure = PagifyApiRequestException.initial().copyWith(msg: 'There is error occur $e');
       }
 
-      _pagifyException = _getPagifyException(ApiRequestException(_failure));
+      _pagifyException = _getPagifyException(
+          PagifyApiRequestException(
+              _failure.msg,
+              pagifyFailure: _failure.pagifyFailure
+          )
+      );
     }
 
     _logError(e);
@@ -594,7 +599,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
       Lottie.asset(Assets.lottieApiError),
       const SizedBox(height: 10),
       Text(
-          _failure.errorMsg?? '',
+          _failure.msg?? '',
           style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500)
       )
     ],
