@@ -1,4 +1,4 @@
-## 0.2.3
+## 0.2.4
 
 * Added support for both ListView and GridView implementations
 * Implemented comprehensive error handling for network operations
@@ -17,3 +17,4 @@
 * enhance reverse pagination by add item extent
 * enhance performance by add cache extent
 * add onScrollPositionChanged property
+* add request failure data class includes status code and message
