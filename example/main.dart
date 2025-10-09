@@ -1,11 +1,9 @@
 import 'dart:developer';
-
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:pagify/helpers/data_and_pagination_data.dart';
 import 'package:pagify/helpers/errors.dart';
 import 'package:pagify/pagify.dart';
-import 'package:pagify/widgets/text.dart';
 
 void main() {
   runApp(const PagifyExample());
@@ -100,9 +98,9 @@ class _PagifyExampleState extends State<PagifyExample> {
               child: InkWell(
                   onTap: (){
                     log('enter here');
-                    _pagifyController.addAtBeginning('otieuytoiuet');
+                    _pagifyController.addAtBeginning('test');
                   },
-                  child: PagifyText(element, fontSize: 20,)
+                  child: Text(element)
               )
           ),
           onLoading: () => log('loading now ...!'),
@@ -121,6 +119,7 @@ class _PagifyExampleState extends State<PagifyExample> {
               log('check your internet connection');
 
             }else if(e is PagifyApiRequestException){
+              e = PagifyApiRequestException(e.msg, pagifyFailure: e.pagifyFailure);
               log(e.msg);
               log(e.pagifyFailure.statusCode.toString());
               log(e.pagifyFailure.statusMsg.toString());
@@ -134,7 +133,7 @@ class _PagifyExampleState extends State<PagifyExample> {
           errorBuilder: (e) => Container(
               color: e is PagifyNetworkException?
               Colors.green: Colors.red,
-              child: PagifyText(e.msg)
+              child: Text(e.msg)
           ),
 
           listenToNetworkConnectivityChanges: true,

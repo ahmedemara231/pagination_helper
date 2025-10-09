@@ -9,7 +9,6 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:lottie/lottie.dart';
 import 'package:pagify/helpers/extensions/null_extension.dart';
 import 'package:pagify/helpers/extensions/zero_extension.dart';
-import 'package:pagify/widgets/text.dart';
 import 'generated/assets.dart';
 import 'helpers/add_frame.dart';
 import 'helpers/custom_bool.dart';
@@ -19,7 +18,7 @@ import 'helpers/status_stream.dart';
 part 'helpers/controller.dart';
 part 'helpers/ranking.dart';
 part 'helpers/scroll_controller.dart';
-
+part 'widgets/text.dart';
 
 /// [FullResponse] is the type of the API response.
 /// [Model] is the type of each data item in the list.
@@ -479,7 +478,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   bool get _hasMoreData => _currentPage <= _totalPages;
   bool get _shouldShowLoading => _hasMoreData && _asyncCallState.currentState.isLoading;
   bool get _shouldShowNoData => widget.showNoDataAlert && !_hasMoreData;
-  final Widget _noMoreDataText = const PagifyText('No more data', textAlign: TextAlign.center, color: Colors.grey);
+  final Widget _noMoreDataText = const _PagifyText('No more data', textAlign: TextAlign.center, color: Colors.grey);
 
   Widget _buildExtraItemSuchNoMoreDataOrLoading({Widget? defaultWidget}){
     if(_shouldShowNoData){
@@ -629,7 +628,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
           activeStateCallBack: (snapshot) => snapshot.hasData?
           snapshot.data!.isError || snapshot.data!.isNetworkError?
           _buildErrorWidget : _asyncCallState.currentState.isLoading?
-          _buildLoadingView : _buildSuccessWidget : const PagifyText('the stream throws an exception'),
+          _buildLoadingView : _buildSuccessWidget : const _PagifyText('the stream throws an exception'),
         )
     );
   }
@@ -662,7 +661,7 @@ class SnapshotHandler extends StatelessWidget {
         return loadingWidget;
 
       case ConnectionState.none:
-        return const PagifyText('no stream connection!');
+        return const _PagifyText('no stream connection!');
 
 
       default:
