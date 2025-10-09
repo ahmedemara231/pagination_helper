@@ -24,6 +24,7 @@ class PagifyController<E> {
   /// Internal list of items being displayed, wrapped in a [ValueNotifier]
   /// so that widgets can listen for changes.
   final ValueNotifier<List<E>> _items = ValueNotifier<List<E>>([]);
+  final ValueNotifier<List<E>> _fullItems = ValueNotifier<List<E>>([]);
 
   /// The scroll controller used to retain and manipulate scroll position.
   RetainableScrollController? _scrollController;
@@ -81,9 +82,11 @@ class PagifyController<E> {
     switch (isReverse) {
       case true:
         _items.value.insertAll(0, newItems);
+        _fullItems.value.insertAll(0, newItems);
         break;
       case false:
         _items.value.addAll(newItems);
+        _fullItems.value.addAll(newItems);
         break;
     }
   }
@@ -107,6 +110,12 @@ class PagifyController<E> {
     return _items.value;
   }
 
+  /// back [_items] to current full data
+  List<E> assignToFullData() {
+    _items.value = List.from(_fullItems.value);
+    _makeActionOnDataChanging();
+    return _items.value;
+  }
   /// Sorts the list in-place based on the provided [compare] function.
   void sort(int Function(E a, E b) compare) {
     _items.value.sort(compare);
