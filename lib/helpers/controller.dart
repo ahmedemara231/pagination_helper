@@ -101,9 +101,10 @@ class PagifyController<E> {
   }
 
   /// Filters the list in-place based on the [condition] and updates listeners.
-  void filterAndUpdate(bool Function(E item) condition) {
+  List<E> filterAndUpdate(bool Function(E item) condition) {
     _items.value = List.from(filter(condition));
     _makeActionOnDataChanging();
+    return _items.value;
   }
 
   /// Sorts the list in-place based on the provided [compare] function.
