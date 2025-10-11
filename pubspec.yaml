@@ -2,7 +2,6 @@ name: pagify
 description: "A flexible and customizable Flutter package for handling paginated data with minimal setup."
 version: 0.2.4
 homepage: https://github.com/ahmedemara231/pagination_helper
-repository: https://github.com/ahmedemara231/pagination_helper
 
 topics:
   - pagination
