@@ -1,4 +1,4 @@
-## 0.2.4
+## 0.2.5
 
 * Added support for both ListView and GridView implementations
 * Implemented comprehensive error handling for network operations
@@ -18,3 +18,4 @@
 * enhance performance by add cache extent
 * add onScrollPositionChanged property
 * add request failure data class includes status code and message
+* add assign to full data function while searching for example
