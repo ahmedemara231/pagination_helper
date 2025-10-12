@@ -37,7 +37,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  pagify: ^0.2.5
+  pagify: ^0.2.6
 ```
 
 Then run:
@@ -450,6 +450,7 @@ Pagify<ApiResponse, Post>.listView(
 | `accessElement(int index)` | Safe access to item at index |
 | `moveToMaxBottom()` | Scroll to bottom with animation |
 | `moveToMaxTop()` | Scroll to top with animation |
+| `assignToFullData()` | retreive last full data while searching for example |
 
 ## 🔄 Pagination Status
 
