@@ -7,18 +7,20 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:lottie/lottie.dart';
-import 'package:pagify/extensions/null_extension.dart';
-import 'package:pagify/extensions/zero_extension.dart';
 import 'generated/assets.dart';
 import 'helpers/add_frame.dart';
 import 'helpers/custom_bool.dart';
 import 'helpers/data_and_pagination_data.dart';
 import 'helpers/errors.dart';
 import 'helpers/status_stream.dart';
+
 part 'helpers/controller.dart';
 part 'helpers/ranking.dart';
 part 'helpers/scroll_controller.dart';
 part 'widgets/text.dart';
+part 'extensions/null_extension.dart';
+part 'extensions/zero_extension.dart';
+
 
 /// [FullResponse] is the type of the API response.
 /// [Model] is the type of each data item in the list.
@@ -139,11 +141,11 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
     this.crossAxisCount,
     this.noConnectionText
   }) : _rankingType = _RankingType.gridView, shrinkWrap = true, itemExtent = null,
-        assert(errorMapper.errorWhenHttp.isNotNull || errorMapper.errorWhenDio.isNotNull),
-        assert(cacheExtent.isNotEqualZero),
+        assert(errorMapper.errorWhenHttp._isNotNull || errorMapper.errorWhenDio._isNotNull),
+        assert(cacheExtent._isNotEqualZero),
         assert(
-        (listenToNetworkConnectivityChanges && (onConnectivityChanged.isNull || onConnectivityChanged.isNotNull)) ||
-            (!listenToNetworkConnectivityChanges && onConnectivityChanged.isNull)
+        (listenToNetworkConnectivityChanges && (onConnectivityChanged._isNull || onConnectivityChanged._isNotNull)) ||
+            (!listenToNetworkConnectivityChanges && onConnectivityChanged._isNull)
         );
 
   /// Creates a paginated widget with a [listView] layout.
@@ -177,11 +179,11 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
         childAspectRatio = null,
         crossAxisSpacing = null,
         mainAxisSpacing = null,
-        assert(errorMapper.errorWhenHttp.isNotNull || errorMapper.errorWhenDio.isNotNull),
-        assert(itemExtent.isNotEqualZero && cacheExtent.isNotEqualZero),
+        assert(errorMapper.errorWhenHttp._isNotNull || errorMapper.errorWhenDio._isNotNull),
+        assert(itemExtent._isNotEqualZero && cacheExtent._isNotEqualZero),
         assert(
-        (listenToNetworkConnectivityChanges && (onConnectivityChanged.isNull || onConnectivityChanged.isNotNull)) ||
-            (!listenToNetworkConnectivityChanges && onConnectivityChanged.isNull)
+        (listenToNetworkConnectivityChanges && (onConnectivityChanged._isNull || onConnectivityChanged._isNotNull)) ||
+            (!listenToNetworkConnectivityChanges && onConnectivityChanged._isNull)
         );
 
 
@@ -199,7 +201,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   StreamSubscription<PagifyAsyncCallStatus>? _statusSubscription;
 
   void _listenStatusChanges(){
-    if(widget.onUpdateStatus.isNotNull){
+    if(widget.onUpdateStatus._isNotNull){
       _statusSubscription = _asyncCallState.listenStatusChanges.listen((event) => widget.onUpdateStatus!(event));
     }
   }
@@ -497,7 +499,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   _buildExtraItemSuchNoMoreDataOrLoading();
 
   Widget _buildItemBuilderWhenReverse({required int index, required List<Model> value}) {
-    if (index.isEqualZero && (_shouldShowLoading || _shouldShowNoData)) {
+    if (index._isEqualZero && (_shouldShowLoading || _shouldShowNoData)) {
       return _buildExtraItemSuchNoMoreDataOrLoading();
     }
 
@@ -567,7 +569,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   _loadingWidget : _listRanking();
 
 
-  Widget get _loadingWidget => widget.loadingBuilder.isNull?
+  Widget get _loadingWidget => widget.loadingBuilder._isNull?
      const Center(child: SizedBox.square(
         dimension: 30,
         child: CircularProgressIndicator.adaptive()
@@ -582,7 +584,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   Widget get _showListOrErrorBuilderBasedUserNeeds => widget.ignoreErrorBuilderWhenErrorOccursAndListIsNotEmpty?
   _listRanking() : _buildErrorViewBasedErrorBuilder;
   
-  Widget get _buildErrorViewBasedErrorBuilder => widget.errorBuilder.isNull?
+  Widget get _buildErrorViewBasedErrorBuilder => widget.errorBuilder._isNull?
   _buildDefaultErrorView : widget.errorBuilder!.call(_pagifyException);
 
   Widget get _buildDefaultErrorView => _asyncCallState.currentState.isNetworkError?
@@ -609,7 +611,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
 
   Widget get _buildSuccessWidget => _itemsIsNotEmpty? _listRanking() : _buildEmptyListView;
 
-  Widget get _buildEmptyListView => widget.emptyListView.isNotNull?
+  Widget get _buildEmptyListView => widget.emptyListView._isNotNull?
   widget.emptyListView! : Column(
     children: [
       Lottie.asset(Assets.lottieNoData),

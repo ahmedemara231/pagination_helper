@@ -46,7 +46,7 @@ class RetainableScrollController extends ScrollController {
     required int totalCurrentItems,
     double? itemExtent
   }) {
-    if(itemExtent.isNotNull){
+    if(itemExtent._isNotNull){
       return subList.length * itemExtent!;
     }else{
         // Calculate average item height from current list
