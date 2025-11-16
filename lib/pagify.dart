@@ -6,10 +6,6 @@ import 'dart:math' as math;
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:lottie/lottie.dart';
-import 'generated/assets.dart';
-import 'helpers/add_frame.dart';
-import 'helpers/custom_bool.dart';
 import 'helpers/data_and_pagination_data.dart';
 import 'helpers/errors.dart';
 import 'helpers/status_stream.dart';
@@ -20,6 +16,8 @@ part 'helpers/scroll_controller.dart';
 part 'widgets/text.dart';
 part 'extensions/null_extension.dart';
 part 'extensions/zero_extension.dart';
+part 'helpers/add_frame.dart';
+part 'helpers/custom_bool.dart';
 
 
 /// [FullResponse] is the type of the API response.
@@ -385,9 +383,9 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
     return waitingResult;
   }
 
-  final CustomBool _isFirstFireToInternetInterceptor = CustomBool(true);
+  final _CustomBool _isFirstFireToInternetInterceptor = _CustomBool(true);
 
-  FutureOr<void> _checkIsFirstTime(CustomBool val, {required FutureOr<void> Function() onNotFirstTime}) async{
+  FutureOr<void> _checkIsFirstTime(_CustomBool val, {required FutureOr<void> Function() onNotFirstTime}) async{
     if(val.isFirst){
       val.isFirst = false;
       return;
@@ -444,7 +442,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
             widget.controller._initScrollController();
             await widget.onSuccess?.call(context, _itemsList);
             if(widget.isReverse){
-              Frame.addBefore(() => _scrollDownWhileGetDataFirstTimeWhenReverse());
+              _Frame.addBefore(() => _scrollDownWhileGetDataFirstTimeWhenReverse());
             }
           }
       );
@@ -590,7 +588,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   Widget get _buildDefaultErrorView => _asyncCallState.currentState.isNetworkError?
   Column(
     children: [
-      Lottie.asset(Assets.lottieNoInternet),
+      const Icon(Icons.wifi_off_sharp, color: Colors.blue, size: 30),
       const SizedBox(height: 10),
       Text(
           _getNoInternetText,
@@ -600,7 +598,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   ) : Column(
     spacing: 10,
     children: [
-      Lottie.asset(Assets.lottieApiError),
+      const Icon(Icons.error, color: Colors.red, size: 30),
       Text(
           _failure.msg,
           style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500)
@@ -614,7 +612,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   Widget get _buildEmptyListView => widget.emptyListView._isNotNull?
   widget.emptyListView! : Column(
     children: [
-      Lottie.asset(Assets.lottieNoData),
+      const Icon(Icons.do_not_disturb_alt, color: Colors.red, size: 30),
       const SizedBox(height: 10),
       Text('There is no data right now!')
     ],

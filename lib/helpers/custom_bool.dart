@@ -1,8 +1,11 @@
+part of '../pagify.dart';
+
+
 /// custom [bool] class
-class CustomBool{
+class _CustomBool{
   /// isFirst [bool] indicator
   bool isFirst;
 
-  /// [CustomBool] constructor
-  CustomBool(this.isFirst);
+  /// [_CustomBool] constructor
+  _CustomBool(this.isFirst);
 }

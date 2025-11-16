@@ -18,9 +18,9 @@ environment:
 
 dependencies:
   lottie: ^3.3.2
-  connectivity_plus: ^6.1.0
+  connectivity_plus: ^7.0.0
   dio: ^5.9.0
-  http: ^1.5.0
+  http: ^1.6.0
 
 
   flutter:
@@ -32,6 +32,6 @@ dev_dependencies:
   flutter_lints: ^6.0.0
 
 # The following section is specific to Flutter packages.
-flutter:
-  assets:
-    - assets/lottie/
+#flutter:
+#  assets:
+#    - assets/lottie/

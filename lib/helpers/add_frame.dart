@@ -1,8 +1,7 @@
-import 'dart:async';
-import 'package:flutter/material.dart';
+part of '../pagify.dart';
 
 /// flutter frame helper
-class Frame {
+class _Frame {
   /// add flutter frame before build
   static void addBefore(FutureOr Function() function) {
     WidgetsBinding.instance.addPostFrameCallback(

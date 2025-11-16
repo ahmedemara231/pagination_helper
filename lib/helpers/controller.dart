@@ -42,7 +42,7 @@ class PagifyController<E> {
     Duration? duration,
     Curve? curve,
   }) async {
-    Frame.addBefore(() async => await _scrollController!.animateTo(
+    _Frame.addBefore(() async => await _scrollController!.animateTo(
           _scrollController!.position.maxScrollExtent,
           duration: duration ?? const Duration(milliseconds: 300),
           curve: curve ?? Curves.easeOutQuad,
@@ -57,7 +57,7 @@ class PagifyController<E> {
     Duration? duration,
     Curve? curve,
   }) async {
-    Frame.addBefore(() async => await _scrollController!.animateTo(
+    _Frame.addBefore(() async => await _scrollController!.animateTo(
           _scrollController!.position.minScrollExtent,
           duration: duration ?? const Duration(milliseconds: 400),
           curve: curve ?? Curves.easeOutQuad,
@@ -82,11 +82,11 @@ class PagifyController<E> {
     switch (isReverse) {
       case true:
         _items.value.insertAll(0, newItems);
-        _fullItems.value.insertAll(0, newItems);
+         _fullItems.value.insertAll(0, newItems);
         break;
       case false:
         _items.value.addAll(newItems);
-        _fullItems.value.addAll(newItems);
+         _fullItems.value.addAll(newItems);
         break;
     }
   }
