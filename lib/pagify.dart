@@ -199,22 +199,24 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   StreamSubscription<PagifyAsyncCallStatus>? _statusSubscription;
 
   void _listenStatusChanges(){
-    if(widget.onUpdateStatus._isNotNull){
-      _statusSubscription = _asyncCallState.listenStatusChanges.listen((event) => widget.onUpdateStatus!(event));
-    }
+      _statusSubscription = _asyncCallState
+          .listenStatusChanges
+          .listen((event) => widget.onUpdateStatus!(event));
   }
 
   @override
   void initState() {
     super.initState();
-    widget.controller._initPagifyState(this);
-    _scrollController = RetainableScrollController();
+    _scrollController = RetainableScrollController()..addListener(_onScroll);
+    widget.controller.._initPagifyState(this).._initScrollController();
     _asyncCallState = AsyncCallStatusInterceptor();
-    _scrollController.addListener(() => _onScroll());
     if(widget.listenToNetworkConnectivityChanges){
       _listenToNetworkChanges();
     }
-    _listenStatusChanges();
+    if(widget.onUpdateStatus._isNotNull){
+      _listenStatusChanges();
+    }
+
     _fetchDataFirstTimeOrRefresh();
   }
 
@@ -272,9 +274,10 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
     widget.onError?.call(context, _currentPage, _pagifyException);
   }
 
-  Future<void> _onScroll() async{
+
+  void _onScroll() {
     try {
-      await _startScrolling();
+      _startScrolling();
     } on Exception catch(e){
       _errorHandler(e);
     }
@@ -439,7 +442,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
           // },
           whenEnd: (mapperResult) async{
             widget.controller._updateItems(newItems: mapperResult.data);
-            widget.controller._initScrollController();
+            // widget.controller._initScrollController();
             await widget.onSuccess?.call(context, _itemsList);
             if(widget.isReverse){
               _Frame.addBefore(() => _scrollDownWhileGetDataFirstTimeWhenReverse());
