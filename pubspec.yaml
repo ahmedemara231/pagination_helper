@@ -21,7 +21,6 @@ dependencies:
   dio: ^5.9.0
   http: ^1.6.0
 
-
   flutter:
     sdk: flutter
 
