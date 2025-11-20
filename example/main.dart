@@ -53,7 +53,10 @@ class _PagifyExampleState extends State<PagifyExample> {
     return MaterialApp(
       title: 'Awesome Button Example',
       home: Scaffold(
-        appBar: AppBar(title: const Text('Example Usage')),
+        appBar: AppBar(title: InkWell(
+            onTap: () => _pagifyController.moveToMaxTop(),
+
+            child: const Text('Example Usage'))),
         body: Pagify<ExampleModel, String>.gridView(
           isReverse: false,
           showNoDataAlert: true,
