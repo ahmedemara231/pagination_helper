@@ -29,7 +29,6 @@ A powerful and flexible Flutter package for implementing paginated lists and gri
 - 🎮 **Controller Support**: Programmatic control over data and scroll position
 - 🔍 **Rich Data Operations**: Filter, sort, add, remove, and manipulate list data
 - 📊 **Status Callbacks**: Real-time pagination status updates
-- 🎭 **Lottie Animations**: Built-in animated loading and error states
 
 ## 📦 Installation
 
