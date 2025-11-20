@@ -36,7 +36,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  pagify: ^0.2.6
+  pagify: ^0.2.7
 ```
 
 Then run:
@@ -51,7 +51,6 @@ This package uses the following dependencies:
 - `connectivity_plus` - for network connectivity checking
 - `dio` (optional) - for enhanced HTTP error handling
 - `http` (optional) - for basic HTTP error handling
-- `lottie` (optional) - for default loading animations
 
 ## 🎯 Quick Start
 
