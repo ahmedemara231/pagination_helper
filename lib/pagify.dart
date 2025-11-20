@@ -442,7 +442,6 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
           // },
           whenEnd: (mapperResult) async{
             widget.controller._updateItems(newItems: mapperResult.data);
-            // widget.controller._initScrollController();
             await widget.onSuccess?.call(context, _itemsList);
             if(widget.isReverse){
               _Frame.addBefore(() => _scrollDownWhileGetDataFirstTimeWhenReverse());
