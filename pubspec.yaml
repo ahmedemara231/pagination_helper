@@ -1,6 +1,6 @@
 name: pagify
 description: "A flexible and customizable Flutter package for handling paginated data with minimal setup."
-version: 0.2.6
+version: 0.2.7
 homepage: https://github.com/ahmedemara231/pagination_helper
 
 topics:
@@ -12,11 +12,9 @@ topics:
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
-
   flutter: ">=1.17.0"
 
 dependencies:
-  lottie: ^3.3.2
   connectivity_plus: ^7.0.0
   dio: ^5.9.0
   http: ^1.6.0
