@@ -217,7 +217,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
       _listenStatusChanges();
     }
 
-    _fetchDataFirstTimeOrRefresh();
+    _fetchDataFirstTime();
   }
 
   @override
@@ -409,7 +409,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
                   _asyncCallState.setLastStatusAsCurrent(
                       ifLastIsLoading: () async {
                         if(_currentPage == 1){
-                          await _fetchDataFirstTimeOrRefresh();
+                          await _fetchDataFirstTime();
                         }else{
                           if(widget.isReverse){
                             widget.controller.moveToMaxTop();
@@ -432,7 +432,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
       });
 
 
-  Future<void> _fetchDataFirstTimeOrRefresh() async {
+  Future<void> _fetchDataFirstTime() async {
     try {
       await _fetchDataAndMapping(
           // whenStart: () {

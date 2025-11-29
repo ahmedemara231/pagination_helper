@@ -14,12 +14,29 @@ class PagifyController<E> {
   /// remake the last request when its fail for example
   FutureOr<void> retry(){
     if(_pagifyState?._currentPage == 1){
-      _pagifyState?._fetchDataFirstTimeOrRefresh();
+      _pagifyState?._fetchDataFirstTime();
 
     }else{
       _pagifyState?._onScroll();
     }
   }
+
+
+  /// get data list length [int]
+  int get getItemsLength => _items.value.length;
+
+  /// check if current state is loading [bool]
+  bool get isLoading => _pagifyState!._asyncCallState.currentState.isLoading;
+
+  /// check if current state is success [bool]
+  bool get isSuccess => _pagifyState!._asyncCallState.currentState.isSuccess;
+
+  /// check if current state is error [bool]
+  bool get isError => _pagifyState!._asyncCallState.currentState.isError;
+
+  /// force fetching data with next page
+  Future<void> loadMore()async => _pagifyState!._fetchDataFirstTime();
+
 
   /// Internal list of items being displayed, wrapped in a [ValueNotifier]
   /// so that widgets can listen for changes.
