@@ -22,6 +22,10 @@ class PagifyController<E> {
   }
 
 
+  /// get current data [List]
+  List<E> get items => List.from(_items.value);
+
+
   /// get data list length [int]
   int get getItemsLength => _items.value.length;
 

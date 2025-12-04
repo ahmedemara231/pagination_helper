@@ -1,4 +1,4 @@
-## 0.2.7
+## 0.2.8
 
 * Added support for both ListView and GridView implementations
 * Implemented comprehensive error handling for network operations
@@ -19,3 +19,5 @@
 * add onScrollPositionChanged property
 * add request failure data class includes status code and message
 * add assign to full data function while searching for example
+* add helper functions like isLoading, isError, isSuccess
+* add loadMore and get list data and length
