@@ -21,7 +21,7 @@ A powerful and flexible Flutter package for implementing paginated lists and gri
 ## 🚀 Features
 
 - 🔄 **Automatic Pagination**: Seamless infinite scrolling with customizable page loading
-- 📱 **ListView & GridView Support**: Switch between list and grid layouts effortlessly  
+- 📱 **ListView & GridView Support**: Switch between list and grid layouts effortlessly
 - 🌐 **Network Connectivity**: Built-in network status monitoring and error handling
 - 🎯 **Flexible Error Mapping**: Custom error handling for Dio and HTTP exceptions
 - ↕️ **Reverse Pagination**: Support for reverse scrolling (chat-like interfaces)
@@ -29,6 +29,9 @@ A powerful and flexible Flutter package for implementing paginated lists and gri
 - 🎮 **Controller Support**: Programmatic control over data and scroll position
 - 🔍 **Rich Data Operations**: Filter, sort, add, remove, and manipulate list data
 - 📊 **Status Callbacks**: Real-time pagination status updates
+- ⚡ **State Getters**: Access loading, success, and error states directly from controller
+- 🔃 **Manual Load More**: Programmatically trigger pagination to load next page
+- 📋 **Items Access**: Get current data list and length at any time
 
 ## 📦 Installation
 
@@ -266,6 +269,111 @@ class _ControllerExampleState extends State<ControllerExample> {
 }
 ```
 
+### Using New Controller Features
+
+```dart
+class AdvancedControllerExample extends StatefulWidget {
+  @override
+  _AdvancedControllerExampleState createState() => _AdvancedControllerExampleState();
+}
+
+class _AdvancedControllerExampleState extends State<AdvancedControllerExample> {
+  late PagifyController<Post> controller;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = PagifyController<Post>();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Advanced Features Demo'),
+        actions: [
+          // Check loading state
+          if (controller.isLoading)
+            Padding(
+              padding: EdgeInsets.all(16.0),
+              child: CircularProgressIndicator(color: Colors.white),
+            ),
+        ],
+      ),
+      body: Column(
+        children: [
+          // Display current items count
+          Padding(
+            padding: EdgeInsets.all(8.0),
+            child: Text('Total Items: ${controller.getItemsLength}'),
+          ),
+
+          // Status indicator
+          Container(
+            padding: EdgeInsets.all(8.0),
+            color: controller.isSuccess ? Colors.green :
+                   controller.isError ? Colors.red : Colors.grey,
+            child: Text(
+              controller.isSuccess ? 'Success' :
+              controller.isError ? 'Error' :
+              controller.isLoading ? 'Loading...' : 'Ready',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+
+          Expanded(
+            child: Pagify<ApiResponse, Post>.listView(
+              controller: controller,
+              // ... other properties
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Manually load more data
+          FloatingActionButton(
+            heroTag: "loadMore",
+            onPressed: () async {
+              await controller.loadMore();
+              print('Current items: ${controller.items.length}');
+            },
+            child: Icon(Icons.refresh),
+            tooltip: 'Load More',
+          ),
+          SizedBox(height: 8),
+
+          // Access current items
+          FloatingActionButton(
+            heroTag: "showData",
+            onPressed: () {
+              final currentItems = controller.items;
+              print('Current items count: ${currentItems.length}');
+
+              // Check if loading before performing action
+              if (!controller.isLoading) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Items: ${controller.getItemsLength}')),
+                );
+              }
+            },
+            child: Icon(Icons.info),
+            tooltip: 'Show Info',
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+}
+```
+
 ## 🔧 Advanced Configuration
 
 ### Network Connectivity Monitoring
@@ -428,11 +536,24 @@ Pagify<ApiResponse, Post>.listView(
 ```
 
 
-## 📱 Controller Methods
+## 📱 Controller Methods & Properties
+
+### Properties (Getters)
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `items` | `List<E>` | Get current data list |
+| `getItemsLength` | `int` | Get data list length |
+| `isLoading` | `bool` | Check if current state is loading |
+| `isSuccess` | `bool` | Check if current state is success |
+| `isError` | `bool` | Check if current state is error |
+
+### Methods
 
 | Method | Description |
 |--------|-------------|
-| `retry()` | remake the last request if it failed for example |
+| `loadMore()` | Force fetching data with next page |
+| `retry()` | Remake the last request if it failed |
 | `addItem(E item)` | Add item to the end of the list |
 | `addItemAt(int index, E item)` | Insert item at specific index |
 | `addAtBeginning(E item)` | Add item at the beginning |
@@ -448,7 +569,7 @@ Pagify<ApiResponse, Post>.listView(
 | `accessElement(int index)` | Safe access to item at index |
 | `moveToMaxBottom()` | Scroll to bottom with animation |
 | `moveToMaxTop()` | Scroll to top with animation |
-| `assignToFullData()` | retreive last full data while searching for example |
+| `assignToFullData()` | Retrieve last full data while searching for example |
 
 ## 🔄 Pagination Status
 
