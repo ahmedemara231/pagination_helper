@@ -194,7 +194,7 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
 class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model>> {
   late RetainableScrollController _scrollController;
   late AsyncCallStatusInterceptor _asyncCallState;
-  late int _totalPages;
+  int _totalPages = 0;
   int _currentPage = 1;
   StreamSubscription<PagifyAsyncCallStatus>? _statusSubscription;
 
