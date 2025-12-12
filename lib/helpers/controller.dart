@@ -25,9 +25,9 @@ class PagifyController<E> {
   /// get current data [List]
   List<E> get items => List.from(_items.value);
 
-
   /// get data list length [int]
   int get getItemsLength => _items.value.length;
+
 
   /// check if current state is loading [bool]
   bool get isLoading => _pagifyState!._asyncCallState.currentState.isLoading;
@@ -38,8 +38,16 @@ class PagifyController<E> {
   /// check if current state is error [bool]
   bool get isError => _pagifyState!._asyncCallState.currentState.isError;
 
+
   /// force fetching data with next page
   Future<void> loadMore()async => _pagifyState!._fetchDataFirstTime();
+
+
+  /// get data like first time as refreshing
+  Future<void> refresh()async {
+    clear();
+    _pagifyState!._fetchDataFirstTime();
+  }
 
 
   /// Internal list of items being displayed, wrapped in a [ValueNotifier]
@@ -193,6 +201,7 @@ class PagifyController<E> {
   /// Clears all items from the list.
   void clear() {
     _items.value.clear();
+    _fullItems.value.clear();
     _makeActionOnDataChanging();
   }
 

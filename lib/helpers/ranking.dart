@@ -6,7 +6,10 @@ enum _RankingType {
   gridView,
 
   /// Displays items in a [ListView].
-  listView
+  listView,
+
+  /// Displays items in a [PageView].
+  pageView,
 }
 
 
@@ -18,4 +21,7 @@ extension _Checking on _RankingType{
 
   /// check if the current type is [ListView]
   bool get isListView => this == _RankingType.listView;
+
+  /// check if the current type is [PageView]
+  bool get isPageView => this == _RankingType.pageView;
 }

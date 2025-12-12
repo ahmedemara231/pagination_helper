@@ -110,6 +110,18 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
   /// Text to display when there is no internet connection.
   final String? noConnectionText;
 
+  /// Implicit Scrolling [bool]
+  final bool? allowImplicitScrolling;
+
+  /// page snapping [bool]
+  final bool? pageSnapping;
+
+  /// on page changed [Function]
+  void Function(int)? onPageChanged;
+
+  /// page view controller [PageController]
+  final PageController? pageController;
+
   /// Creates a paginated widget with a [GridView] layout.
   Pagify.gridView({super.key,
     required this.controller,
@@ -139,6 +151,7 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
     this.crossAxisCount,
     this.noConnectionText
   }) : _rankingType = _RankingType.gridView, shrinkWrap = true, itemExtent = null,
+        pageSnapping = null, allowImplicitScrolling = null, onPageChanged = null, pageController = null,
         assert(errorMapper.errorWhenHttp._isNotNull || errorMapper.errorWhenDio._isNotNull),
         assert(cacheExtent._isNotEqualZero),
         assert(
@@ -146,7 +159,7 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
             (!listenToNetworkConnectivityChanges && onConnectivityChanged._isNull)
         );
 
-  /// Creates a paginated widget with a [listView] layout.
+  /// Creates a paginated widget with a [ListView] layout.
   Pagify.listView({super.key,
     required this.controller,
     required this.asyncCall,
@@ -177,8 +190,48 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
         childAspectRatio = null,
         crossAxisSpacing = null,
         mainAxisSpacing = null,
+        pageSnapping = null, allowImplicitScrolling = null, onPageChanged = null, pageController = null,
         assert(errorMapper.errorWhenHttp._isNotNull || errorMapper.errorWhenDio._isNotNull),
         assert(itemExtent._isNotEqualZero && cacheExtent._isNotEqualZero),
+        assert(
+        (listenToNetworkConnectivityChanges && (onConnectivityChanged._isNull || onConnectivityChanged._isNotNull)) ||
+            (!listenToNetworkConnectivityChanges && onConnectivityChanged._isNull)
+        );
+
+  /// Creates a paginated widget with a [PageView] layout.
+  Pagify.pageView({super.key,
+    required this.controller,
+    required this.asyncCall,
+    required this.mapper,
+    required this.errorMapper,
+    required this.itemBuilder,
+    this.onPageChanged,
+    this.allowImplicitScrolling,
+    this.pageController,
+    this.pageSnapping,
+    this.onScrollPositionChanged,
+    this.listenToNetworkConnectivityChanges = false,
+    this.onConnectivityChanged,
+    this.onUpdateStatus,
+    this.isReverse = false,
+    this.onLoading,
+    this.onSuccess,
+    this.onError,
+    this.ignoreErrorBuilderWhenErrorOccursAndListIsNotEmpty = false,
+    this.showNoDataAlert = false,
+    this.loadingBuilder,
+    this.errorBuilder,
+    this.emptyListView,
+    this.scrollDirection,
+    this.noConnectionText,
+  }) : _rankingType = _RankingType.pageView,
+        crossAxisCount = null,
+        childAspectRatio = null,
+        crossAxisSpacing = null,
+        mainAxisSpacing = null,
+        itemExtent = null, cacheExtent = null, shrinkWrap = null,
+        padding = const EdgeInsets.all(0),
+        assert(errorMapper.errorWhenHttp._isNotNull || errorMapper.errorWhenDio._isNotNull),
         assert(
         (listenToNetworkConnectivityChanges && (onConnectivityChanged._isNull || onConnectivityChanged._isNotNull)) ||
             (!listenToNetworkConnectivityChanges && onConnectivityChanged._isNull)
@@ -472,6 +525,9 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
 
     }else if(widget._rankingType.isListView){
       return _listView();
+
+    }else if(widget._rankingType.isPageView){
+      return _pageView();
     }
 
     return _listView();
@@ -561,13 +617,28 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
     ),
   );
 
+
+  Widget _pageView() => Align(
+    alignment: widget.isReverse? Alignment.bottomCenter : Alignment.topCenter,
+    child: PageView.builder(
+      allowImplicitScrolling: widget.allowImplicitScrolling ?? false,
+      pageSnapping: widget.pageSnapping ?? true,
+      onPageChanged: widget.onPageChanged,
+      scrollDirection: widget.scrollDirection?? Axis.vertical,
+      controller: widget.pageController,
+      itemCount: _buildItemCount(_itemsList),
+      itemBuilder: (context, index) => widget.isReverse?
+      _buildItemBuilderWhenReverse(index: index, value: _itemsList) :
+      _buildItemBuilder(index: index, value: _itemsList),
+    ),
+  );
+
   List<Model> get _itemsList => List.from(widget.controller._items.value);
   bool get _itemsIsNotEmpty => _itemsList.isNotEmpty;
   bool get _itemsIsEmpty => _itemsList.isEmpty;
 
   Widget get _buildLoadingView => _itemsIsEmpty?
   _loadingWidget : _listRanking();
-
 
   Widget get _loadingWidget => widget.loadingBuilder._isNull?
      const Center(child: SizedBox.square(
