@@ -49,6 +49,11 @@ class PagifyController<E> {
     _pagifyState!._fetchDataFirstTime();
   }
 
+  /// reload the list
+  Future<void> reload()async {
+    _makeActionOnDataChanging();
+  }
+
 
   /// Internal list of items being displayed, wrapped in a [ValueNotifier]
   /// so that widgets can listen for changes.
