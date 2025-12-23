@@ -40,7 +40,11 @@ class PagifyController<E> {
 
 
   /// force fetching data with next page
-  Future<void> loadMore()async => _pagifyState!._fetchDataFirstTime();
+  Future<void> loadMore()async {
+    if(_pagifyState?._hasMoreData ?? false){
+      _pagifyState!._fetchDataFirstTime();
+    }
+  }
 
 
   /// get data like first time as refreshing
