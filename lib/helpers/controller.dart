@@ -138,7 +138,7 @@ class PagifyController<E> {
 
   /// Returns a new list containing items that satisfy the [condition].
   List<E> filter(bool Function(E item) condition) {
-    return _items.value.where(condition).toList();
+    return List.from(_items.value.where(condition));
   }
 
   /// Filters the list in-place based on the [condition] and updates listeners.
