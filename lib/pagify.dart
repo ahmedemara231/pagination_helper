@@ -121,7 +121,7 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
   final bool? pageSnapping;
 
   /// on page changed [Function]
-  void Function(int)? onPageChanged;
+  final void Function(int)? onPageChanged;
 
   /// page view controller [PageController]
   final PageController? pageController;
