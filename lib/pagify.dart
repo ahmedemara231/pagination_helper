@@ -23,6 +23,10 @@ part 'helpers/custom_bool.dart';
 /// [FullResponse] is the type of the API response.
 /// [Model] is the type of each data item in the list.
 class Pagify<FullResponse, Model> extends StatefulWidget {
+  /// scroll physics [ScrollPhysics]
+  final ScrollPhysics? physics;
+  /// custom Scroll controller [ScrollController]
+  // final ScrollController? scrollController;
   /// [padding] property in list and grid view
   final EdgeInsetsGeometry padding;
 
@@ -48,7 +52,7 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
   final PagifyErrorMapper errorMapper;
 
   /// Callback to handle scroll position changes.
-  final void Function(ScrollPosition position)? onScrollPositionChanged;
+  final void Function(ScrollPosition position, bool isMaxTop, bool isMaxBottom, bool isMiddle)? onScrollPositionChanged;
 
   /// listen to network connectivity changes
   final bool listenToNetworkConnectivityChanges;
@@ -129,6 +133,8 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
     required this.mapper,
     required this.errorMapper,
     required this.itemBuilder,
+    this.physics,
+    // this.scrollController,
     this.onScrollPositionChanged,
     this.padding = const EdgeInsets.all(0),
     this.cacheExtent,
@@ -166,6 +172,8 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
     required this.mapper,
     required this.errorMapper,
     required this.itemBuilder,
+    this.physics,
+    // this.scrollController,
     this.onScrollPositionChanged,
     this.padding = const EdgeInsets.all(0),
     this.itemExtent,
@@ -205,6 +213,7 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
     required this.mapper,
     required this.errorMapper,
     required this.itemBuilder,
+    this.physics,
     this.onPageChanged,
     this.allowImplicitScrolling,
     this.pageController,
@@ -230,6 +239,7 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
         crossAxisSpacing = null,
         mainAxisSpacing = null,
         itemExtent = null, cacheExtent = null, shrinkWrap = null,
+        // scrollController = null,
         padding = const EdgeInsets.all(0),
         assert(errorMapper.errorWhenHttp._isNotNull || errorMapper.errorWhenDio._isNotNull),
         assert(
@@ -245,7 +255,7 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
 
 /// [State] object of pagify widget object
 class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model>> {
-  late RetainableScrollController _scrollController;
+  late final RetainableScrollController _scrollController = RetainableScrollController();
   late AsyncCallStatusInterceptor _asyncCallState;
   int _totalPages = 0;
   int _currentPage = 1;
@@ -260,7 +270,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   @override
   void initState() {
     super.initState();
-    _scrollController = RetainableScrollController()..addListener(_onScroll);
+    _scrollController.addListener(_onScroll);
     widget.controller.._initPagifyState(this).._initScrollController();
     _asyncCallState = AsyncCallStatusInterceptor();
     if(widget.listenToNetworkConnectivityChanges){
@@ -336,20 +346,29 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
     }
   }
 
-  void _listenToScrollPositionChanges() => widget.onScrollPositionChanged?.call(_scrollController.position);
+  bool get _isMaxTop => _scrollController.position.pixels ==
+  _scrollController.position.minScrollExtent;
+
+  bool get _isMaxBottom => _scrollController.position.pixels ==
+      _scrollController.position.maxScrollExtent;
+
+  void _listenToScrollPositionChanges() => widget.onScrollPositionChanged?.call(
+      _scrollController.position,
+      _isMaxTop, _isMaxBottom,
+      (!_isMaxTop && !_isMaxBottom)
+  );
+
   Future<void> _startScrolling() async{
     _listenToScrollPositionChanges();
     switch(widget.isReverse){
       case true:
-        if (_scrollController.position.pixels ==
-            _scrollController.position.minScrollExtent &&
+        if (_isMaxTop &&
             !_asyncCallState.currentState.isLoading &&
             _currentPage <= _totalPages){
           await _fetchDataWhenScrollUp();
         }
       default:
-        if (_scrollController.position.pixels ==
-            _scrollController.position.maxScrollExtent &&
+        if (_isMaxBottom &&
             !_asyncCallState.currentState.isLoading &&
             _currentPage <= _totalPages) {
           await _fetchDataWhenScrollDown();
@@ -488,11 +507,12 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   Future<void> _fetchDataFirstTime() async {
     try {
       await _fetchDataAndMapping(
-          // whenStart: () {
-          //   if(_currentPage > 1 && _itemsIsNotEmpty){
-          //     _resetDataWhenRefresh();
-          //   }
-          // },
+          whenStart: () {
+            if(_currentPage > 1){
+              _currentPage = 1;
+              widget.controller.clear();
+            }
+          },
           whenEnd: (mapperResult) async{
             widget.controller._updateItems(newItems: mapperResult.data);
             await widget.onSuccess?.call(context, _itemsList);
@@ -575,6 +595,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
     alignment: widget.isReverse? Alignment.bottomCenter : Alignment.topCenter,
     child: ListView.builder(
         padding: widget.padding,
+        physics: widget.physics,
         itemExtent: widget.itemExtent,
         cacheExtent: widget.cacheExtent,
         scrollDirection: widget.scrollDirection?? Axis.vertical,
@@ -605,7 +626,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
           crossAxisSpacing: widget.crossAxisSpacing?? 0.0,
           childAspectRatio: widget.childAspectRatio?? 1,
           scrollDirection: widget.scrollDirection?? Axis.vertical,
-          physics: const NeverScrollableScrollPhysics(),
+          physics: widget.physics ?? const NeverScrollableScrollPhysics(),
           children: List.generate(
             _itemsList.length,
                 (index) => widget.itemBuilder(context, _itemsList, index, _itemsList[index]),
@@ -623,6 +644,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
     child: PageView.builder(
       allowImplicitScrolling: widget.allowImplicitScrolling ?? false,
       pageSnapping: widget.pageSnapping ?? true,
+      physics: widget.physics,
       onPageChanged: widget.onPageChanged,
       scrollDirection: widget.scrollDirection?? Axis.vertical,
       controller: widget.pageController,

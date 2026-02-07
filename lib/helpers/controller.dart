@@ -49,7 +49,6 @@ class PagifyController<E> {
 
   /// get data like first time as refreshing
   Future<void> refresh()async {
-    clear();
     _pagifyState!._fetchDataFirstTime();
   }
 
@@ -65,7 +64,7 @@ class PagifyController<E> {
   final ValueNotifier<List<E>> _fullItems = ValueNotifier<List<E>>([]);
 
   /// The scroll controller used to retain and manipulate scroll position.
-  RetainableScrollController? _scrollController;
+  ScrollController? _scrollController;
 
   /// Initializes the internal scroll controller if it hasn't been set.
   void _initScrollController() {
