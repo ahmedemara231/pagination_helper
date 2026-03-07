@@ -126,6 +126,23 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
   /// page view controller [PageController]
   final PageController? pageController;
 
+  /// Optional cache key for offline support.
+  /// Must be provided together with [cacheToJson], [cacheFromJson], [onSaveCache], and [onReadCache].
+  final String? cacheKey;
+
+  /// Converts a [Model] item to a JSON map for caching.
+  final Map<String, dynamic> Function(Model item)? cacheToJson;
+
+  /// Converts a cached JSON map back to a [Model] item.
+  final Model Function(Map<String, dynamic> json)? cacheFromJson;
+
+  /// Called to persist the fetched items list when a request succeeds.
+  final void Function(String key, List<Map<String, dynamic>> items)? onSaveCache;
+
+  /// Called to restore items from cache when a request fails.
+  /// Return `null` or an empty list if no cache exists.
+  final List<Map<String, dynamic>>? Function(String key)? onReadCache;
+
   /// Creates a paginated widget with a [GridView] layout.
   Pagify.gridView({super.key,
     required this.controller,
@@ -155,7 +172,12 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
     this.childAspectRatio = 1,
     this.scrollDirection,
     this.crossAxisCount,
-    this.noConnectionText
+    this.noConnectionText,
+    this.cacheKey,
+    this.cacheToJson,
+    this.cacheFromJson,
+    this.onSaveCache,
+    this.onReadCache,
   }) : _rankingType = _RankingType.gridView, shrinkWrap = true, itemExtent = null,
         pageSnapping = null, allowImplicitScrolling = null, onPageChanged = null, pageController = null,
         assert(errorMapper.errorWhenHttp._isNotNull || errorMapper.errorWhenDio._isNotNull),
@@ -192,7 +214,12 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
     this.emptyListView,
     this.shrinkWrap,
     this.scrollDirection,
-    this.noConnectionText
+    this.noConnectionText,
+    this.cacheKey,
+    this.cacheToJson,
+    this.cacheFromJson,
+    this.onSaveCache,
+    this.onReadCache,
   }) : _rankingType = _RankingType.listView,
         crossAxisCount = null,
         childAspectRatio = null,
@@ -233,6 +260,11 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
     this.emptyListView,
     this.scrollDirection,
     this.noConnectionText,
+    this.cacheKey,
+    this.cacheToJson,
+    this.cacheFromJson,
+    this.onSaveCache,
+    this.onReadCache,
   }) : _rankingType = _RankingType.pageView,
         crossAxisCount = null,
         childAspectRatio = null,
@@ -508,13 +540,15 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
     try {
       await _fetchDataAndMapping(
           whenStart: () {
-            if(_currentPage > 1){
+            if(_currentPage > 1 || _restoredFromCache){
               _currentPage = 1;
+              _restoredFromCache = false;
               widget.controller.clear();
             }
           },
           whenEnd: (mapperResult) async{
             widget.controller._updateItems(newItems: mapperResult.data);
+            _saveCacheIfNeeded();
             await widget.onSuccess?.call(context, _itemsList);
             if(widget.isReverse){
               _Frame.addBefore(() => _scrollDownWhileGetDataFirstTimeWhenReverse());
@@ -522,6 +556,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
           }
       );
     } on Exception catch(e){
+      if (_itemsIsEmpty && _tryRestoreFromCache()) return;
       _errorHandler(e);
     }
   }
@@ -534,10 +569,32 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
     }
   }
 
-  // void _resetDataWhenRefresh() {
-  //   _currentPage = 1;
-  //   _itemsList.clear();
-  // }
+  bool _restoredFromCache = false;
+
+  bool get _hasCacheConfig =>
+      widget.cacheKey._isNotNull &&
+      widget.cacheToJson._isNotNull &&
+      widget.cacheFromJson._isNotNull &&
+      widget.onSaveCache._isNotNull &&
+      widget.onReadCache._isNotNull;
+
+  void _saveCacheIfNeeded() {
+    if (_hasCacheConfig && _itemsIsNotEmpty) {
+      final jsonList = _itemsList.map(widget.cacheToJson!).toList();
+      widget.onSaveCache!(widget.cacheKey!, jsonList);
+    }
+  }
+
+  bool _tryRestoreFromCache() {
+    if (!_hasCacheConfig) return false;
+    final cached = widget.onReadCache!(widget.cacheKey!);
+    if (cached._isNull || cached!.isEmpty) return false;
+    final items = cached.map(widget.cacheFromJson!).toList();
+    widget.controller._updateItems(newItems: items);
+    _restoredFromCache = true;
+    _asyncCallState.updateAllStatues(PagifyAsyncCallStatus.success);
+    return true;
+  }
 
   Widget _listRanking(){
     if(widget._rankingType.isGridView){
