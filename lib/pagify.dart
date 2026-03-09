@@ -374,8 +374,19 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
     try {
       _startScrolling();
     } on Exception catch(e){
+      if (_handleScrollError()) return;
       _errorHandler(e);
     }
+  }
+
+  /// On scroll error: if items already exist keep showing them (success state),
+  /// otherwise try to restore from persisted cache.
+  bool _handleScrollError() {
+    if (_itemsIsNotEmpty) {
+      _asyncCallState.updateAllStatues(PagifyAsyncCallStatus.success);
+      return true;
+    }
+    return _tryRestoreFromCache();
   }
 
   bool get _isMaxTop => _scrollController.position.pixels ==
@@ -419,6 +430,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   Future<void> _fetchDataWhileScrolling(void Function(List<Model> items) onUpdate)async => await _fetchDataAndMapping(
       whenEnd: (mapperResult) async{
         onUpdate(mapperResult.data);
+        _saveCacheIfNeeded();
         await widget.onSuccess?.call(context, _itemsList);
         _scrollController.restoreOffset(
             isReverse: widget.isReverse,
