@@ -271,7 +271,7 @@ class Pagify<FullResponse, Model> extends StatefulWidget {
         crossAxisSpacing = null,
         mainAxisSpacing = null,
         itemExtent = null, cacheExtent = null, shrinkWrap = null,
-        // scrollController = null,
+  // scrollController = null,
         padding = const EdgeInsets.all(0),
         assert(errorMapper.errorWhenHttp._isNotNull || errorMapper.errorWhenDio._isNotNull),
         assert(
@@ -294,9 +294,9 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   StreamSubscription<PagifyAsyncCallStatus>? _statusSubscription;
 
   void _listenStatusChanges(){
-      _statusSubscription = _asyncCallState
-          .listenStatusChanges
-          .listen((event) => widget.onUpdateStatus!(event));
+    _statusSubscription = _asyncCallState
+        .listenStatusChanges
+        .listen((event) => widget.onUpdateStatus!(event));
   }
 
   @override
@@ -390,7 +390,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   }
 
   bool get _isMaxTop => _scrollController.position.pixels ==
-  _scrollController.position.minScrollExtent;
+      _scrollController.position.minScrollExtent;
 
   bool get _isMaxBottom => _scrollController.position.pixels ==
       _scrollController.position.maxScrollExtent;
@@ -490,13 +490,13 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
     late final FullResponse waitingResult;
     final connectivityResult = await _connectivity.checkConnectivity();
     await _checkAndMake(
-        connectivityResult: connectivityResult,
-        onConnected: () async{
-          final FullResponse result = await asyncCall(context, _currentPage);
-          waitingResult = result;
-        },
+      connectivityResult: connectivityResult,
+      onConnected: () async{
+        final FullResponse result = await asyncCall(context, _currentPage);
+        waitingResult = result;
+      },
 
-        onDisconnected: () => throw _getNetworkException,
+      onDisconnected: () => throw _getNetworkException,
     );
 
     return waitingResult;
@@ -585,10 +585,10 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
 
   bool get _hasCacheConfig =>
       widget.cacheKey._isNotNull &&
-      widget.cacheToJson._isNotNull &&
-      widget.cacheFromJson._isNotNull &&
-      widget.onSaveCache._isNotNull &&
-      widget.onReadCache._isNotNull;
+          widget.cacheToJson._isNotNull &&
+          widget.cacheFromJson._isNotNull &&
+          widget.onSaveCache._isNotNull &&
+          widget.onReadCache._isNotNull;
 
   void _saveCacheIfNeeded() {
     if (_hasCacheConfig && _itemsIsNotEmpty) {
@@ -732,10 +732,10 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
   _loadingWidget : _listRanking();
 
   Widget get _loadingWidget => widget.loadingBuilder._isNull?
-     const Center(child: SizedBox.square(
-        dimension: 30,
-        child: CircularProgressIndicator.adaptive()
-    )) :  widget.loadingBuilder!;
+  const Center(child: SizedBox.square(
+      dimension: 30,
+      child: CircularProgressIndicator.adaptive()
+  )) :  widget.loadingBuilder!;
 
 
 
@@ -745,7 +745,7 @@ class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model
 
   Widget get _showListOrErrorBuilderBasedUserNeeds => widget.ignoreErrorBuilderWhenErrorOccursAndListIsNotEmpty?
   _listRanking() : _buildErrorViewBasedErrorBuilder;
-  
+
   Widget get _buildErrorViewBasedErrorBuilder => widget.errorBuilder._isNull?
   _buildDefaultErrorView : widget.errorBuilder!.call(_pagifyException);
 
@@ -838,3 +838,881 @@ class SnapshotHandler extends StatelessWidget {
     return _checkStreamStatesAndBuildView;
   }
 }
+// import 'dart:async';
+// import 'dart:convert';
+// import 'dart:developer' as dev;
+// import 'dart:io';
+// import 'dart:math' as math;
+// import 'package:dio/dio.dart';
+// import 'package:flutter/material.dart';
+// import 'package:connectivity_plus/connectivity_plus.dart';
+// import 'helpers/data_and_pagination_data.dart';
+// import 'helpers/errors.dart';
+// import 'helpers/status_stream.dart';
+//
+// part 'helpers/controller.dart';
+// part 'helpers/ranking.dart';
+// part 'helpers/scroll_controller.dart';
+// part 'widgets/text.dart';
+// part 'extensions/null_extension.dart';
+// part 'extensions/zero_extension.dart';
+// part 'helpers/add_frame.dart';
+// part 'helpers/custom_bool.dart';
+//
+//
+// /// [FullResponse] is the type of the API response.
+// /// [Model] is the type of each data item in the list.
+// class Pagify<FullResponse, Model> extends StatefulWidget {
+//   /// scroll physics [ScrollPhysics]
+//   final ScrollPhysics? physics;
+//   /// custom Scroll controller [ScrollController]
+//   // final ScrollController? scrollController;
+//   /// [padding] property in list and grid view
+//   final EdgeInsetsGeometry padding;
+//
+//   /// [itemExtent] property in list and grid view
+//   final double? itemExtent;
+//
+//   /// [cacheExtent] property in list and grid view
+//   final double? cacheExtent;
+//
+//   /// Called whenever the async call status changes.
+//   final FutureOr<void> Function(PagifyAsyncCallStatus status)? onUpdateStatus;
+//
+//   /// Whether the list should be displayed in reverse order.
+//   final bool isReverse;
+//
+//   /// Whether to show a "No Data" alert when no data is available.
+//   final bool showNoDataAlert;
+//
+//   /// Determines the layout type (grid or list).
+//   final _RankingType _rankingType;
+//
+//   /// Maps network and HTTP errors to messages.
+//   final PagifyErrorMapper errorMapper;
+//
+//   /// Callback to handle scroll position changes.
+//   final void Function(ScrollPosition position, bool isMaxTop, bool isMaxBottom, bool isMiddle)? onScrollPositionChanged;
+//
+//   /// listen to network connectivity changes
+//   final bool listenToNetworkConnectivityChanges;
+//
+//   /// make action when connectivity changed
+//   final FutureOr<void> Function(bool isConnected)? onConnectivityChanged;
+//
+//   /// Callback fired before an async call starts loading.
+//   final FutureOr<void> Function()? onLoading;
+//
+//   /// Callback fired when data is successfully fetched.
+//   final FutureOr<void> Function(BuildContext context, List<Model> data)? onSuccess;
+//
+//   /// Callback fired when an error occurs while fetching data.
+//   final FutureOr<void> Function(BuildContext context, int currentPage, PagifyException exception)? onError;
+//
+//   /// The asynchronous API call to fetch paginated data.
+//   final Future<FullResponse> Function(BuildContext context, int currentPage) asyncCall;
+//
+//   /// Maps the API [FullResponse] to a [PagifyData] object containing items and pagination info.
+//   final PagifyData<Model> Function(FullResponse response) mapper;
+//
+//   /// Builds each list/grid item widget.
+//   final Widget Function(BuildContext context, List<Model> data, int index, Model element) itemBuilder;
+//
+//   /// Custom loading widget to display while fetching data.
+//   final Widget? loadingBuilder;
+//
+//   /// Custom widget to display when an error occurs.
+//   final Widget Function(PagifyException e)? errorBuilder;
+//
+//   /// choose if need to ignore [ErrorBuilder] and keep the list visible when error occurs and list is not empty
+//   final bool ignoreErrorBuilderWhenErrorOccursAndListIsNotEmpty;
+//
+//   /// Custom widget to display when the data list is empty.
+//   final Widget? emptyListView;
+//
+//   /// Controller for interacting with the pagination state.
+//   final PagifyController<Model> controller;
+//
+//   /// Scroll direction for the list/grid.
+//   final Axis? scrollDirection;
+//
+//   /// Whether the list/grid should shrink-wrap its contents.
+//   final bool? shrinkWrap;
+//
+//   /// Spacing between rows in [GridView].
+//   final double? mainAxisSpacing;
+//
+//   /// Spacing between columns in [GridView].
+//   final double? crossAxisSpacing;
+//
+//   /// Aspect ratio for each child in [GridView].
+//   final double? childAspectRatio;
+//
+//   /// Number of columns in [GridView].
+//   final int? crossAxisCount;
+//
+//   /// Text to display when there is no internet connection.
+//   final String? noConnectionText;
+//
+//   /// Implicit Scrolling [bool]
+//   final bool? allowImplicitScrolling;
+//
+//   /// page snapping [bool]
+//   final bool? pageSnapping;
+//
+//   /// on page changed [Function]
+//   final void Function(int)? onPageChanged;
+//
+//   /// page view controller [PageController]
+//   final PageController? pageController;
+//
+//   /// Optional cache key for offline support.
+//   /// Must be provided together with [cacheToJson], [cacheFromJson], [onSaveCache], and [onReadCache].
+//   final String Function(int currentPage)? cacheKey;
+//
+//   /// Converts a [Model] item to a JSON map for caching.
+//   final Map<String, dynamic> Function(Model item)? cacheToJson;
+//
+//   /// Converts a cached JSON map back to a [Model] item.
+//   final Model Function(Map<String, dynamic> json)? cacheFromJson;
+//
+//   /// Called to persist the fetched items list when a request succeeds.
+//   final void Function(String key, List<Map<String, dynamic>> items)? onSaveCache;
+//
+//   /// Called to restore items from cache when a request fails.
+//   /// Return `null` or an empty list if no cache exists.
+//   final List<Map<String, dynamic>>? Function(String key)? onReadCache;
+//
+//   /// Creates a paginated widget with a [GridView] layout.
+//   Pagify.gridView({super.key,
+//     required this.controller,
+//     required this.asyncCall,
+//     required this.mapper,
+//     required this.errorMapper,
+//     required this.itemBuilder,
+//     this.physics,
+//     // this.scrollController,
+//     this.onScrollPositionChanged,
+//     this.padding = const EdgeInsets.all(0),
+//     this.cacheExtent,
+//     this.listenToNetworkConnectivityChanges = false,
+//     this.onConnectivityChanged,
+//     this.onUpdateStatus,
+//     this.isReverse = false,
+//     this.onLoading,
+//     this.onSuccess,
+//     this.onError,
+//     this.ignoreErrorBuilderWhenErrorOccursAndListIsNotEmpty = false,
+//     this.showNoDataAlert = false,
+//     this.loadingBuilder,
+//     this.errorBuilder,
+//     this.emptyListView,
+//     this.mainAxisSpacing,
+//     this.crossAxisSpacing,
+//     this.childAspectRatio = 1,
+//     this.scrollDirection,
+//     this.crossAxisCount,
+//     this.noConnectionText,
+//     this.cacheKey,
+//     this.cacheToJson,
+//     this.cacheFromJson,
+//     this.onSaveCache,
+//     this.onReadCache,
+//   }) : _rankingType = _RankingType.gridView, shrinkWrap = true, itemExtent = null,
+//         pageSnapping = null, allowImplicitScrolling = null, onPageChanged = null, pageController = null,
+//         assert(errorMapper.errorWhenHttp._isNotNull || errorMapper.errorWhenDio._isNotNull),
+//         assert(cacheExtent._isNotEqualZero),
+//         assert(
+//         (listenToNetworkConnectivityChanges && (onConnectivityChanged._isNull || onConnectivityChanged._isNotNull)) ||
+//             (!listenToNetworkConnectivityChanges && onConnectivityChanged._isNull)
+//         );
+//
+//   /// Creates a paginated widget with a [ListView] layout.
+//   Pagify.listView({super.key,
+//     required this.controller,
+//     required this.asyncCall,
+//     required this.mapper,
+//     required this.errorMapper,
+//     required this.itemBuilder,
+//     this.physics,
+//     // this.scrollController,
+//     this.onScrollPositionChanged,
+//     this.padding = const EdgeInsets.all(0),
+//     this.itemExtent,
+//     this.cacheExtent,
+//     this.listenToNetworkConnectivityChanges = false,
+//     this.onConnectivityChanged,
+//     this.onUpdateStatus,
+//     this.isReverse = false,
+//     this.onLoading,
+//     this.onSuccess,
+//     this.onError,
+//     this.ignoreErrorBuilderWhenErrorOccursAndListIsNotEmpty = false,
+//     this.showNoDataAlert = false,
+//     this.loadingBuilder,
+//     this.errorBuilder,
+//     this.emptyListView,
+//     this.shrinkWrap,
+//     this.scrollDirection,
+//     this.noConnectionText,
+//     this.cacheKey,
+//     this.cacheToJson,
+//     this.cacheFromJson,
+//     this.onSaveCache,
+//     this.onReadCache,
+//   }) : _rankingType = _RankingType.listView,
+//         crossAxisCount = null,
+//         childAspectRatio = null,
+//         crossAxisSpacing = null,
+//         mainAxisSpacing = null,
+//         pageSnapping = null, allowImplicitScrolling = null, onPageChanged = null, pageController = null,
+//         assert(errorMapper.errorWhenHttp._isNotNull || errorMapper.errorWhenDio._isNotNull),
+//         assert(itemExtent._isNotEqualZero && cacheExtent._isNotEqualZero),
+//         assert(
+//         (listenToNetworkConnectivityChanges && (onConnectivityChanged._isNull || onConnectivityChanged._isNotNull)) ||
+//             (!listenToNetworkConnectivityChanges && onConnectivityChanged._isNull)
+//         );
+//
+//   /// Creates a paginated widget with a [PageView] layout.
+//   Pagify.pageView({super.key,
+//     required this.controller,
+//     required this.asyncCall,
+//     required this.mapper,
+//     required this.errorMapper,
+//     required this.itemBuilder,
+//     this.physics,
+//     this.onPageChanged,
+//     this.allowImplicitScrolling,
+//     this.pageController,
+//     this.pageSnapping,
+//     this.onScrollPositionChanged,
+//     this.listenToNetworkConnectivityChanges = false,
+//     this.onConnectivityChanged,
+//     this.onUpdateStatus,
+//     this.isReverse = false,
+//     this.onLoading,
+//     this.onSuccess,
+//     this.onError,
+//     this.ignoreErrorBuilderWhenErrorOccursAndListIsNotEmpty = false,
+//     this.showNoDataAlert = false,
+//     this.loadingBuilder,
+//     this.errorBuilder,
+//     this.emptyListView,
+//     this.scrollDirection,
+//     this.noConnectionText,
+//     this.cacheKey,
+//     this.cacheToJson,
+//     this.cacheFromJson,
+//     this.onSaveCache,
+//     this.onReadCache,
+//   }) : _rankingType = _RankingType.pageView,
+//         crossAxisCount = null,
+//         childAspectRatio = null,
+//         crossAxisSpacing = null,
+//         mainAxisSpacing = null,
+//         itemExtent = null, cacheExtent = null, shrinkWrap = null,
+//   // scrollController = null,
+//         padding = const EdgeInsets.all(0),
+//         assert(errorMapper.errorWhenHttp._isNotNull || errorMapper.errorWhenDio._isNotNull),
+//         assert(
+//         (listenToNetworkConnectivityChanges && (onConnectivityChanged._isNull || onConnectivityChanged._isNotNull)) ||
+//             (!listenToNetworkConnectivityChanges && onConnectivityChanged._isNull)
+//         );
+//
+//
+//   @override
+//   State<Pagify<FullResponse, Model>> createState() => _PagifyState<FullResponse, Model>();
+// }
+//
+//
+// /// [State] object of pagify widget object
+// class _PagifyState<FullResponse, Model> extends State<Pagify<FullResponse, Model>> {
+//   late final RetainableScrollController _scrollController = RetainableScrollController();
+//   late AsyncCallStatusInterceptor _asyncCallState;
+//   int _totalPages = 0;
+//   int _currentPage = 1;
+//   bool _isFetching = false;
+//   StreamSubscription<PagifyAsyncCallStatus>? _statusSubscription;
+//
+//   void _listenStatusChanges(){
+//     _statusSubscription = _asyncCallState
+//         .listenStatusChanges
+//         .listen((event) => widget.onUpdateStatus!(event));
+//   }
+//
+//   @override
+//   void initState() {
+//     super.initState();
+//     _scrollController.addListener(_onScroll);
+//     widget.controller.._initPagifyState(this).._initScrollController();
+//     _asyncCallState = AsyncCallStatusInterceptor();
+//     if(widget.listenToNetworkConnectivityChanges){
+//       _listenToNetworkChanges();
+//     }
+//     if(widget.onUpdateStatus._isNotNull){
+//       _listenStatusChanges();
+//     }
+//
+//     _fetchDataFirstTime();
+//   }
+//
+//   @override
+//   void dispose() {
+//     _scrollController.dispose();
+//     _asyncCallState.dispose();
+//     _connectivitySubscription?.cancel();
+//     _statusSubscription?.cancel();
+//     super.dispose();
+//   }
+//
+//   late PagifyException _pagifyException;
+//   late PagifyApiRequestException _failure;
+//
+//   void _logError(Exception e){
+//     if(e is DioException){
+//       String prettyJson = const JsonEncoder.withIndent('  ').convert(e.response?.data);
+//       dev.log('error : $prettyJson');
+//     }else if(e is HttpException){
+//       String prettyJson = const JsonEncoder.withIndent('  ').convert(e.message);
+//       dev.log('error : $prettyJson');
+//     }
+//   }
+//
+//   PagifyException _getPagifyException(PagifyException e) => e;
+//
+//   FutureOr<void> _errorHandler(Exception e){
+//     if(e is PagifyNetworkException){
+//       _pagifyException = _getPagifyException(e);
+//       _asyncCallState.updateAllStatues(PagifyAsyncCallStatus.networkError);
+//
+//     }else{
+//       if(e is DioException){
+//         _failure = widget.errorMapper.errorWhenDio?.call(e)?? PagifyApiRequestException.initial();
+//
+//       }else if(e is HttpException){
+//         _failure = widget.errorMapper.errorWhenHttp?.call(e)?? PagifyApiRequestException.initial();
+//
+//       }else{
+//         _failure = PagifyApiRequestException.initial().copyWith(msg: 'There is error occur $e');
+//       }
+//
+//       _pagifyException = _getPagifyException(
+//           PagifyApiRequestException(
+//               _failure.msg,
+//               pagifyFailure: _failure.pagifyFailure
+//           )
+//       );
+//
+//       _asyncCallState.updateAllStatues(PagifyAsyncCallStatus.error);
+//     }
+//
+//     _logError(e);
+//     widget.onError?.call(context, _currentPage, _pagifyException);
+//   }
+//
+//
+//   void _onScroll() {
+//     _startScrolling();
+//   }
+//
+//   /// On scroll error: try to load the next cached page.
+//   /// If no cached page exists but items are already loaded, keep showing them.
+//   /// Otherwise surface the error.
+//   bool _handleScrollError() {
+//     if (_tryRestorePageFromCache(isReverse: widget.isReverse)) return true;
+//     if (_itemsIsNotEmpty) {
+//       _asyncCallState.updateAllStatues(PagifyAsyncCallStatus.success);
+//       return true;
+//     }
+//     return false;
+//   }
+//
+//   bool get _isMaxTop => _scrollController.position.pixels ==
+//       _scrollController.position.minScrollExtent;
+//
+//   bool get _isMaxBottom => _scrollController.position.pixels ==
+//       _scrollController.position.maxScrollExtent;
+//
+//   void _listenToScrollPositionChanges() => widget.onScrollPositionChanged?.call(
+//       _scrollController.position,
+//       _isMaxTop, _isMaxBottom,
+//       (!_isMaxTop && !_isMaxBottom)
+//   );
+//
+//   Future<void> _startScrolling() async{
+//     try {
+//       _listenToScrollPositionChanges();
+//       switch(widget.isReverse){
+//         case true:
+//           if (_isMaxTop &&
+//               !_isFetching &&
+//               _currentPage <= _totalPages){
+//             _isFetching = true;
+//             try {
+//               await _fetchDataWhenScrollUp();
+//             } finally {
+//               _isFetching = false;
+//             }
+//           }
+//         default:
+//           if (_isMaxBottom &&
+//               !_isFetching &&
+//               _currentPage <= _totalPages) {
+//             _isFetching = true;
+//             try {
+//               await _fetchDataWhenScrollDown();
+//             } finally {
+//               _isFetching = false;
+//             }
+//           }
+//       }
+//     } on Exception catch(e){
+//       _isFetching = false;
+//       if (_handleScrollError()) return;
+//       _errorHandler(e);
+//     }
+//   }
+//
+//   Future<void> _fetchDataWhenScrollUp() async => await _fetchDataWhileScrolling((items) =>
+//       widget.controller._updateItems(newItems: items, isReverse: true)
+//   );
+//
+//   Future<void> _fetchDataWhenScrollDown() async => await _fetchDataWhileScrolling((items) =>
+//       widget.controller._updateItems(newItems: items, isReverse: false)
+//   );
+//
+//   Future<void> _fetchDataWhileScrolling(void Function(List<Model> items) onUpdate)async => await _fetchDataAndMapping(
+//       whenEnd: (mapperResult) async{
+//         onUpdate(mapperResult.data);
+//         _saveCacheIfNeeded(mapperResult.data);
+//         await widget.onSuccess?.call(context, _itemsList);
+//         _scrollController.restoreOffset(
+//             isReverse: widget.isReverse,
+//             subList: mapperResult.data,
+//             totalCurrentItems: _itemsList.length,
+//             itemExtent: widget.itemExtent
+//         );
+//       }
+//   );
+//
+//   Future<void> _fetchDataAndMapping({
+//     FutureOr<void> Function()? whenStart,
+//     FutureOr<void> Function(PagifyData<Model> mapperResult)? whenEnd,
+//   })async{
+//     await whenStart?.call();
+//     _asyncCallState.updateAllStatues(PagifyAsyncCallStatus.loading);
+//     await widget.onLoading?.call();
+//     _scrollController.retainOffset();
+//     final mapperResult = await _manageMapper();
+//     if(_currentPage <= mapperResult.paginationData.totalPages.toInt()){
+//       setState(() => _currentPage++);
+//       _asyncCallState.updateAllStatues(PagifyAsyncCallStatus.success);
+//     }
+//     await whenEnd?.call(mapperResult);
+//   }
+//
+//   Future<PagifyData<Model>> _manageMapper()async{
+//     final result = await _callApi(widget.asyncCall);
+//     final PagifyData<Model> mapperResult = widget.mapper(result);
+//
+//     // should be called every time because the total pages may be changed
+//     _manageTotalPagesNumber(mapperResult.paginationData.totalPages);
+//     return mapperResult;
+//   }
+//
+//   void _manageTotalPagesNumber(int totalPagesNumber) => _totalPages = totalPagesNumber;
+//
+//   late final Connectivity _connectivity = Connectivity();
+//
+//   Future<void> _checkAndMake({
+//     required List<ConnectivityResult> connectivityResult,
+//     required FutureOr<void> Function() onConnected,
+//     required FutureOr<void> Function() onDisconnected,
+//   })async{
+//     if(connectivityResult.contains(ConnectivityResult.none)){
+//       await onDisconnected.call();
+//     }else{
+//       await onConnected.call();
+//     }
+//   }
+//
+//   String get _getNoInternetText => widget.noConnectionText?? 'Check your internet connection';
+//
+//   PagifyNetworkException get _getNetworkException => PagifyNetworkException(_getNoInternetText);
+//
+//   Future<FullResponse> _callApi(Future<FullResponse> Function(BuildContext context, int currentPage) asyncCall)async{
+//     late final FullResponse waitingResult;
+//     final connectivityResult = await _connectivity.checkConnectivity();
+//     await _checkAndMake(
+//       connectivityResult: connectivityResult,
+//       onConnected: () async{
+//         final FullResponse result = await asyncCall(context, _currentPage);
+//         waitingResult = result;
+//       },
+//
+//       onDisconnected: () => throw _getNetworkException,
+//     );
+//
+//     return waitingResult;
+//   }
+//
+//   final _CustomBool _isFirstFireToInternetInterceptor = _CustomBool(true);
+//
+//   FutureOr<void> _checkIsFirstTime(_CustomBool val, {required FutureOr<void> Function() onNotFirstTime}) async{
+//     if(val.isFirst){
+//       val.isFirst = false;
+//       return;
+//
+//     }else{
+//       await onNotFirstTime.call();
+//     }
+//   }
+//
+//   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+//   void _listenToNetworkChanges() =>
+//       _connectivitySubscription = _connectivity.onConnectivityChanged.listen((networkStatus){
+//         _checkIsFirstTime(
+//             _isFirstFireToInternetInterceptor,
+//             onNotFirstTime: () => _checkAndMake(
+//                 connectivityResult: networkStatus,
+//                 onConnected: () async{
+//                   _asyncCallState.setLastStatusAsCurrent(
+//                       ifLastIsLoading: () async {
+//                         if(_currentPage == 1){
+//                           await _fetchDataFirstTime();
+//                         }else{
+//                           if(widget.isReverse){
+//                             widget.controller.moveToMaxTop();
+//
+//                           }else{
+//                             widget.controller.moveToMaxBottom();
+//                           }
+//                           _onScroll();
+//                         }
+//                       }
+//                   );
+//                   await widget.onConnectivityChanged?.call(true);
+//                 },
+//                 onDisconnected: ()async {
+//                   _errorHandler(_getNetworkException);
+//                   await widget.onConnectivityChanged?.call(false);
+//                 }
+//             )
+//         );
+//       });
+//
+//
+//   Future<void> _fetchDataFirstTime() async {
+//     if (_isFetching) return;
+//     _isFetching = true;
+//     try {
+//       await _fetchDataAndMapping(
+//           whenStart: () {
+//             if(_currentPage > 1 || _restoredFromCache){
+//               _currentPage = 1;
+//               _restoredFromCache = false;
+//               widget.controller.clear();
+//             }
+//           },
+//           whenEnd: (mapperResult) async{
+//             widget.controller._updateItems(newItems: mapperResult.data);
+//             _saveCacheIfNeeded(mapperResult.data);
+//             await widget.onSuccess?.call(context, _itemsList);
+//             if(widget.isReverse){
+//               _Frame.addBefore(() => _scrollDownWhileGetDataFirstTimeWhenReverse());
+//             }
+//           }
+//       );
+//     } on Exception catch(e){
+//       if (_tryRestorePageFromCache()) return;
+//       _errorHandler(e);
+//     } finally {
+//       _isFetching = false;
+//     }
+//   }
+//
+//   void _scrollDownWhileGetDataFirstTimeWhenReverse(){
+//     if(_itemsIsNotEmpty){
+//       _scrollController.jumpTo(
+//         _scrollController.position.maxScrollExtent,
+//       );
+//     }
+//   }
+//
+//   bool _restoredFromCache = false;
+//
+//   String Function(int) get _cacheKey =>
+//       widget.cacheKey ?? (page) => 'pagify$page';
+//
+//   bool get _hasCacheConfig =>
+//       widget.cacheToJson._isNotNull &&
+//           widget.cacheFromJson._isNotNull &&
+//           widget.onSaveCache._isNotNull &&
+//           widget.onReadCache._isNotNull;
+//
+//   void _saveCacheIfNeeded(List<Model> pageItems) {
+//     if (_hasCacheConfig && pageItems.isNotEmpty) {
+//       final jsonList = pageItems.map(widget.cacheToJson!).toList();
+//       widget.onSaveCache!(_cacheKey(_currentPage - 1), jsonList);
+//     }
+//   }
+//
+//   /// Tries to restore a single cached page for [_currentPage].
+//   /// On success: appends/prepends items, increments [_currentPage], sets [_totalPages]
+//   /// to allow the next page attempt, and returns true.
+//   /// When no cached page exists but items are already loaded, stops pagination
+//   /// gracefully (returns true, no error shown).
+//   /// Returns false only when no cached page exists and no items are loaded.
+//   bool _tryRestorePageFromCache({bool isReverse = false}) {
+//     if (!_hasCacheConfig) return false;
+//     final cached = widget.onReadCache!(_cacheKey(_currentPage));
+//     if (cached._isNull || cached!.isEmpty) {
+//       if (_itemsIsNotEmpty) {
+//         // No more cached pages — stop pagination without showing an error.
+//         setState(() => _totalPages = _currentPage - 1);
+//         _asyncCallState.updateAllStatues(PagifyAsyncCallStatus.success);
+//         return true;
+//       }
+//       return false;
+//     }
+//     final items = cached.map(widget.cacheFromJson!).toList();
+//     widget.controller._updateItems(newItems: items, isReverse: isReverse);
+//     _restoredFromCache = true;
+//     setState(() {
+//       _currentPage++;
+//       _totalPages = _currentPage; // tentatively allow fetching the next page
+//     });
+//     _asyncCallState.updateAllStatues(PagifyAsyncCallStatus.success);
+//     return true;
+//   }
+//
+//   Widget _listRanking(){
+//     if(widget._rankingType.isGridView){
+//       return _gridView();
+//
+//     }else if(widget._rankingType.isListView){
+//       return _listView();
+//
+//     }else if(widget._rankingType.isPageView){
+//       return _pageView();
+//     }
+//
+//     return _listView();
+//   }
+//
+//   bool get _hasMoreData => _currentPage <= _totalPages;
+//   bool get _shouldShowLoading => _hasMoreData && _asyncCallState.currentState.isLoading;
+//   bool get _shouldShowNoData => widget.showNoDataAlert && !_hasMoreData;
+//   final Widget _noMoreDataText = const _PagifyText('No more data', textAlign: TextAlign.center, color: Colors.grey);
+//
+//   Widget _buildExtraItemSuchNoMoreDataOrLoading({Widget? defaultWidget}){
+//     if(_shouldShowNoData){
+//       return _noMoreDataText;
+//
+//     }else if(_shouldShowLoading){
+//       return _loadingWidget;
+//
+//     }else{
+//       return defaultWidget?? const SizedBox.shrink();
+//     }
+//   }
+//
+//   Widget _buildItemBuilder({required int index, required List<Model> value}) => index < value.length?
+//   widget.itemBuilder(context, value, index, value[index]) :
+//   _buildExtraItemSuchNoMoreDataOrLoading();
+//
+//   Widget _buildItemBuilderWhenReverse({required int index, required List<Model> value}) {
+//     if (index._isEqualZero && (_shouldShowLoading || _shouldShowNoData)) {
+//       return _buildExtraItemSuchNoMoreDataOrLoading();
+//     }
+//
+//     int dataIndex = (_shouldShowLoading || _shouldShowNoData) ? index - 1 : index;
+//     return widget.itemBuilder(context, value, dataIndex, value[dataIndex]);
+//   }
+//
+//   int _buildItemCount(List<Model> value){
+//     if((_shouldShowNoData) || (_shouldShowLoading)){
+//       return value.length + 1;
+//     }else{
+//       return value.length;
+//     }
+//   }
+//
+//   Widget _listView() => Align(
+//     alignment: widget.isReverse? Alignment.bottomCenter : Alignment.topCenter,
+//     child: ListView.builder(
+//         padding: widget.padding,
+//         physics: widget.physics,
+//         itemExtent: widget.itemExtent,
+//         cacheExtent: widget.cacheExtent,
+//         scrollDirection: widget.scrollDirection?? Axis.vertical,
+//         shrinkWrap: widget.shrinkWrap?? false,
+//         controller: _scrollController,
+//         itemCount: _buildItemCount(_itemsList),
+//         itemBuilder: (context, index) => widget.isReverse?
+//         _buildItemBuilderWhenReverse(index: index, value: _itemsList) :
+//         _buildItemBuilder(index: index, value: _itemsList)
+//     ),
+//   );
+//
+//   Widget _gridView() => SingleChildScrollView(
+//     controller: _scrollController,
+//     child: Column(
+//       crossAxisAlignment: CrossAxisAlignment.center,
+//       mainAxisAlignment: widget.isReverse?
+//       MainAxisAlignment.end : MainAxisAlignment.start,
+//       children: [
+//         if(widget.isReverse)
+//           _buildExtraItemSuchNoMoreDataOrLoading(),
+//         GridView.count(
+//           padding: widget.padding,
+//           cacheExtent: widget.cacheExtent,
+//           shrinkWrap: widget.shrinkWrap!,
+//           crossAxisCount: widget.crossAxisCount?? 2,
+//           mainAxisSpacing: widget.mainAxisSpacing?? 0.0,
+//           crossAxisSpacing: widget.crossAxisSpacing?? 0.0,
+//           childAspectRatio: widget.childAspectRatio?? 1,
+//           scrollDirection: widget.scrollDirection?? Axis.vertical,
+//           physics: widget.physics ?? const NeverScrollableScrollPhysics(),
+//           children: List.generate(
+//             _itemsList.length,
+//                 (index) => widget.itemBuilder(context, _itemsList, index, _itemsList[index]),
+//           ),
+//         ),
+//         if(!widget.isReverse)
+//           _buildExtraItemSuchNoMoreDataOrLoading(),
+//       ],
+//     ),
+//   );
+//
+//
+//   Widget _pageView() => Align(
+//     alignment: widget.isReverse? Alignment.bottomCenter : Alignment.topCenter,
+//     child: PageView.builder(
+//       allowImplicitScrolling: widget.allowImplicitScrolling ?? false,
+//       pageSnapping: widget.pageSnapping ?? true,
+//       physics: widget.physics,
+//       onPageChanged: widget.onPageChanged,
+//       scrollDirection: widget.scrollDirection?? Axis.vertical,
+//       controller: widget.pageController,
+//       itemCount: _buildItemCount(_itemsList),
+//       itemBuilder: (context, index) => widget.isReverse?
+//       _buildItemBuilderWhenReverse(index: index, value: _itemsList) :
+//       _buildItemBuilder(index: index, value: _itemsList),
+//     ),
+//   );
+//
+//   List<Model> get _itemsList => List.from(widget.controller._items.value);
+//   bool get _itemsIsNotEmpty => _itemsList.isNotEmpty;
+//   bool get _itemsIsEmpty => _itemsList.isEmpty;
+//
+//   Widget get _buildLoadingView => _itemsIsEmpty?
+//   _loadingWidget : _listRanking();
+//
+//   Widget get _loadingWidget => widget.loadingBuilder._isNull?
+//   const Center(child: SizedBox.square(
+//       dimension: 30,
+//       child: CircularProgressIndicator.adaptive()
+//   )) :  widget.loadingBuilder!;
+//
+//
+//
+//   Widget get _buildErrorWidget => _itemsIsNotEmpty?
+//   _showListOrErrorBuilderBasedUserNeeds : _buildErrorViewBasedErrorBuilder;
+//
+//
+//   Widget get _showListOrErrorBuilderBasedUserNeeds => widget.ignoreErrorBuilderWhenErrorOccursAndListIsNotEmpty?
+//   _listRanking() : _buildErrorViewBasedErrorBuilder;
+//
+//   Widget get _buildErrorViewBasedErrorBuilder => widget.errorBuilder._isNull?
+//   _buildDefaultErrorView : widget.errorBuilder!.call(_pagifyException);
+//
+//   Widget get _buildDefaultErrorView => _asyncCallState.currentState.isNetworkError?
+//   Column(
+//     children: [
+//       const Icon(Icons.wifi_off_sharp, color: Colors.blue, size: 30),
+//       const SizedBox(height: 10),
+//       Text(
+//           _getNoInternetText,
+//           style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500)
+//       )
+//     ],
+//   ) : Column(
+//     spacing: 10,
+//     children: [
+//       const Icon(Icons.error, color: Colors.red, size: 30),
+//       Text(
+//           _failure.msg,
+//           style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500)
+//       )
+//     ],
+//   );
+//
+//
+//   Widget get _buildSuccessWidget => _itemsIsNotEmpty? _listRanking() : _buildEmptyListView;
+//
+//   Widget get _buildEmptyListView => widget.emptyListView._isNotNull?
+//   widget.emptyListView! : Column(
+//     children: [
+//       const Icon(Icons.do_not_disturb_alt, color: Colors.red, size: 30),
+//       const SizedBox(height: 10),
+//       Text('There is no data right now!')
+//     ],
+//   );
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return StreamBuilder<PagifyAsyncCallStatus>(
+//         stream: _asyncCallState.listenStatusChanges,
+//         builder: (context, snapshot) => SnapshotHandler(
+//           snapshot: snapshot,
+//           loadingWidget: _loadingWidget,
+//           activeStateCallBack: (snapshot) => snapshot.hasData?
+//           snapshot.data!.isError || snapshot.data!.isNetworkError?
+//           _buildErrorWidget : _asyncCallState.currentState.isLoading?
+//           _buildLoadingView : _buildSuccessWidget : const _PagifyText('the stream throws an exception'),
+//         )
+//     );
+//   }
+// }
+//
+//
+// /// A widget that wraps a [StreamBuilder] to handle [PagifyAsyncCallStatus]
+// /// and render the appropriate UI state (loading, error, or success).
+// class SnapshotHandler extends StatelessWidget {
+//
+//   /// Snapshot from the [StreamBuilder] containing pagination state.
+//   final AsyncSnapshot<PagifyAsyncCallStatus> snapshot;
+//   /// Widget to display while loading.
+//   final Widget loadingWidget;
+//
+//   /// Callback to build the active UI state when the stream has data.
+//   final Widget Function(AsyncSnapshot<PagifyAsyncCallStatus> snapshot) activeStateCallBack;
+//
+//
+//   /// Creates a snapshot handler for managing async call UI states.
+//   const SnapshotHandler({super.key,
+//     required this.snapshot,
+//     required this.loadingWidget,
+//     required this.activeStateCallBack
+//   });
+//
+//   Widget get _checkStreamStatesAndBuildView{
+//     switch(snapshot.connectionState){
+//       case ConnectionState.waiting:
+//         return loadingWidget;
+//
+//       case ConnectionState.none:
+//         return const _PagifyText('no stream connection!');
+//
+//
+//       default:
+//         return activeStateCallBack.call(snapshot);
+//     }
+//   }
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return _checkStreamStatesAndBuildView;
+//   }
+// }

@@ -32,6 +32,7 @@ A powerful and flexible Flutter package for implementing paginated lists and gri
 - ⚡ **State Getters**: Access loading, success, and error states directly from controller
 - 🔃 **Manual Load More**: Programmatically trigger pagination to load next page
 - 📋 **Items Access**: Get current data list and length at any time
+- 💾 **Offline Caching**: Built-in support for caching data locally and restoring it when offline
 
 ## 📦 Installation
 
@@ -39,7 +40,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  pagify: ^0.3.0
+  pagify: <latest>
 ```
 
 Then run:
@@ -454,6 +455,49 @@ Pagify<MessageResponse, Message>.listView(
   onSuccess: (context, data) {
     print('Loaded ${data.length} messages');
   },
+)
+```
+
+### Offline Caching
+
+Enable offline support by providing a cache key and serialization functions. When the API call fails, Pagify will automatically restore data from the cache.
+
+```dart
+Pagify<ApiResponse, Post>.listView(
+  controller: controller,
+  asyncCall: _fetchPosts,
+  mapper: _mapResponse,
+  errorMapper: _errorMapper,
+  itemBuilder: _buildPostItem,
+
+  // Cache configuration
+  cacheKey: 'posts_cache',
+  cacheToJson: (post) => post.toJson(),
+  cacheFromJson: (json) => Post.fromJson(json),
+  onSaveCache: (key, items) {
+    // Persist to local storage (e.g., SharedPreferences, Hive, etc.)
+    prefs.setString(key, jsonEncode(items));
+  },
+  onReadCache: (key) {
+    // Restore from local storage; return null or [] if nothing cached
+    final raw = prefs.getString(key);
+    if (raw == null) return null;
+    return List<Map<String, dynamic>>.from(jsonDecode(raw));
+  },
+)
+```
+
+> All five cache parameters (`cacheKey`, `cacheToJson`, `cacheFromJson`, `onSaveCache`, `onReadCache`) must be provided together to enable caching.
+
+### Suppress Error UI When List Has Data
+
+Use `ignoreErrorBuilderWhenErrorOccursAndListIsNotEmpty` to keep the existing list visible when a subsequent page request fails, instead of replacing it with the error widget.
+
+```dart
+Pagify<ApiResponse, Post>.listView(
+  controller: controller,
+  ignoreErrorBuilderWhenErrorOccursAndListIsNotEmpty: true,
+  // ... other properties
 )
 ```
 

@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.3.1]
+
+### Added
+- Offline caching support via `cacheKey`, `cacheToJson`, `cacheFromJson`, `onSaveCache`, and `onReadCache` parameters.
+- `ignoreErrorBuilderWhenErrorOccursAndListIsNotEmpty` option to keep the list visible when an error occurs and the list already has items.
+
+---
+
 ## [0.3.0]
 
 ### Added
