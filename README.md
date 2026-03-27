@@ -676,3 +676,5 @@ If this package helped you, please give it a ⭐ on [GitHub](https://github.com/
 
 Made ❤️ by [Ahmed Emara](https://github.com/ahmedemara231)
 [linkedIn](https://www.linkedin.com/in/ahmed-emara-11550526a/)
+
+[![Buy Me A Coffee](https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png)](https://www.buymeacoffee.com/emara24)
